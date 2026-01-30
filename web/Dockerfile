@@ -17,7 +17,7 @@ ARG VITE_API_URL=/api/v1
 ENV VITE_API_URL=${VITE_API_URL}
 
 # Build the application
-RUN npm run build
+RUN npm run build || (npm run build 2>&1 && exit 1)
 
 # Production stage
 FROM nginx:alpine

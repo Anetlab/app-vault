@@ -33,9 +33,16 @@ type RegisterRequest struct {
 
 // RegisterResponse is the response for user registration
 type RegisterResponse struct {
-	UserID    string `json:"user_id"`
+	Token     string       `json:"token"`
+	User      UserResponse `json:"user"`
+	SecretKey string       `json:"secretKey"`
+}
+
+// UserResponse is the response for user data
+type UserResponse struct {
+	ID        string `json:"id"`
 	Email     string `json:"email"`
-	SecretKey string `json:"secret_key"`
+	CreatedAt string `json:"createdAt"`
 }
 
 // Register handles user registration
@@ -55,9 +62,19 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := h.authService.GenerateToken(result.UserID, result.Email)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to generate token")
+		return
+	}
+
 	writeJSON(w, http.StatusCreated, RegisterResponse{
-		UserID:    result.UserID.String(),
-		Email:     result.Email,
+		Token: token,
+		User: UserResponse{
+			ID:        result.UserID.String(),
+			Email:     result.Email,
+			CreatedAt: time.Now().Format(time.RFC3339),
+		},
 		SecretKey: result.SecretKey,
 	})
 }

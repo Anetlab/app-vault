@@ -64,23 +64,23 @@
               </div>
             </td>
             <td class="px-6 py-4 text-slate-300">
-              {{ sp.description || '-' }}
+              {{ sp.permissions?.join(', ') || '-' }}
             </td>
             <td class="px-6 py-4">
               <span
                 :class="[
                   'px-2 py-1 rounded-full text-xs font-medium',
-                  sp.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                  sp.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
                 ]"
               >
-                {{ sp.is_active ? 'Active' : 'Inactive' }}
+                {{ sp.isActive ? 'Active' : 'Inactive' }}
               </span>
             </td>
             <td class="px-6 py-4 text-slate-400">
-              {{ formatDate(sp.created_at) }}
+              {{ formatDate(sp.createdAt) }}
             </td>
             <td class="px-6 py-4 text-slate-400">
-              {{ sp.last_used_at ? formatDate(sp.last_used_at) : 'Never' }}
+              {{ sp.lastUsedAt ? formatDate(sp.lastUsedAt) : 'Never' }}
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex items-center justify-end gap-2">
@@ -132,12 +132,12 @@
             />
           </div>
           <div class="mb-4">
-            <label class="block text-slate-300 mb-2">Description</label>
+            <label class="block text-slate-300 mb-2">Permissions</label>
             <textarea
-              v-model="createForm.description"
+              v-model="createForm.permissions"
               rows="3"
               class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
-              placeholder="Service principal for production deployment"
+              placeholder="Comma-separated permissions"
             ></textarea>
           </div>
           <div class="flex justify-end gap-2">
@@ -188,10 +188,10 @@
             <label class="block text-slate-400 text-sm mb-1">Client ID</label>
             <div class="flex items-center gap-2">
               <code class="flex-1 px-3 py-2 bg-slate-900 rounded text-cyan-400 font-mono text-sm">
-                {{ selectedServicePrincipal.client_id }}
+                {{ selectedServicePrincipal.clientId }}
               </code>
               <button
-                @click="copyToClipboard(selectedServicePrincipal.client_id, 'Client ID')"
+                @click="copyToClipboard(selectedServicePrincipal.clientId, 'Client ID')"
                 class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-cyan-400 rounded transition-colors"
               >
                 <i class="fas fa-copy"></i>
@@ -199,9 +199,9 @@
             </div>
           </div>
 
-          <div v-if="selectedServicePrincipal.description">
-            <label class="block text-slate-400 text-sm mb-1">Description</label>
-            <div class="text-slate-300">{{ selectedServicePrincipal.description }}</div>
+          <div>
+            <label class="block text-slate-400 text-sm mb-1">Permissions</label>
+            <div class="text-slate-300">{{ selectedServicePrincipal.permissions?.join(', ') || 'None' }}</div>
           </div>
 
           <div>
@@ -209,24 +209,24 @@
             <span
               :class="[
                 'inline-block px-3 py-1 rounded-full text-sm font-medium',
-                selectedServicePrincipal.is_active
+                selectedServicePrincipal.isActive
                   ? 'bg-green-500/20 text-green-400'
                   : 'bg-red-500/20 text-red-400'
               ]"
             >
-              {{ selectedServicePrincipal.is_active ? 'Active' : 'Inactive' }}
+              {{ selectedServicePrincipal.isActive ? 'Active' : 'Inactive' }}
             </span>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-slate-400 text-sm mb-1">Created</label>
-              <div class="text-slate-300">{{ formatDate(selectedServicePrincipal.created_at) }}</div>
+              <div class="text-slate-300">{{ formatDate(selectedServicePrincipal.createdAt) }}</div>
             </div>
             <div>
               <label class="block text-slate-400 text-sm mb-1">Last Used</label>
               <div class="text-slate-300">
-                {{ selectedServicePrincipal.last_used_at ? formatDate(selectedServicePrincipal.last_used_at) : 'Never' }}
+                {{ selectedServicePrincipal.lastUsedAt ? formatDate(selectedServicePrincipal.lastUsedAt) : 'Never' }}
               </div>
             </div>
           </div>
@@ -260,10 +260,10 @@
             <label class="block text-slate-400 text-sm mb-1">Client ID</label>
             <div class="flex items-center gap-2">
               <code class="flex-1 px-3 py-2 bg-slate-900 rounded text-cyan-400 font-mono text-sm">
-                {{ newServicePrincipal.client_id }}
+                {{ newServicePrincipal.clientId }}
               </code>
               <button
-                @click="copyToClipboard(newServicePrincipal.client_id, 'Client ID')"
+                @click="copyToClipboard(newServicePrincipal.clientId, 'Client ID')"
                 class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-cyan-400 rounded transition-colors"
               >
                 <i class="fas fa-copy"></i>
@@ -370,7 +370,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { servicePrincipalApi } from '../api/servicePrincipals'
+import { servicePrincipalsApi } from '../api/servicePrincipals'
 import { useToastStore } from '../stores/toast'
 import type { ServicePrincipal, CreateServicePrincipalRequest } from '../types'
 
@@ -393,18 +393,15 @@ const newServicePrincipal = ref<ServicePrincipal & { client_secret: string } | n
 
 const createForm = ref<CreateServicePrincipalRequest>({
   name: '',
-  description: ''
+  permissions: []
 })
 
 const fetchServicePrincipals = async () => {
   loading.value = true
   try {
-    servicePrincipals.value = await servicePrincipalApi.list()
+    servicePrincipals.value = await servicePrincipalsApi.list()
   } catch (error: any) {
-    toastStore.addToast({
-      type: 'error',
-      message: error.response?.data?.error || 'Failed to fetch service principals'
-    })
+    toastStore.error(error.response?.data?.error || 'Failed to fetch service principals')
   } finally {
     loading.value = false
   }
@@ -413,17 +410,17 @@ const fetchServicePrincipals = async () => {
 const handleCreate = async () => {
   createLoading.value = true
   try {
-    const response = await servicePrincipalApi.create(createForm.value)
-    newServicePrincipal.value = response
+    const response = await servicePrincipalsApi.create(createForm.value)
+    newServicePrincipal.value = {
+      ...response.servicePrincipal,
+      client_secret: response.clientSecret
+    }
     showCreateModal.value = false
     showCreatedModal.value = true
-    createForm.value = { name: '', description: '' }
+    createForm.value = { name: '', permissions: [] }
     await fetchServicePrincipals()
   } catch (error: any) {
-    toastStore.addToast({
-      type: 'error',
-      message: error.response?.data?.error || 'Failed to create service principal'
-    })
+    toastStore.error(error.response?.data?.error || 'Failed to create service principal')
   } finally {
     createLoading.value = false
   }
@@ -436,13 +433,10 @@ const closeCreatedModal = () => {
 
 const viewServicePrincipal = async (sp: ServicePrincipal) => {
   try {
-    selectedServicePrincipal.value = await servicePrincipalApi.get(sp.id)
+    selectedServicePrincipal.value = await servicePrincipalsApi.getById(sp.id)
     showViewModal.value = true
   } catch (error: any) {
-    toastStore.addToast({
-      type: 'error',
-      message: error.response?.data?.error || 'Failed to fetch service principal details'
-    })
+    toastStore.error(error.response?.data?.error || 'Failed to fetch service principal details')
   }
 }
 
@@ -456,16 +450,16 @@ const handleRegenerate = async () => {
 
   regenerateLoading.value = true
   try {
-    const response = await servicePrincipalApi.regenerate(selectedServicePrincipal.value.id)
+    const response = await servicePrincipalsApi.regenerateSecret(selectedServicePrincipal.value.id)
     showRegenerateModal.value = false
-    newServicePrincipal.value = response
+    newServicePrincipal.value = {
+      ...selectedServicePrincipal.value,
+      client_secret: response.clientSecret
+    }
     showCreatedModal.value = true
     await fetchServicePrincipals()
   } catch (error: any) {
-    toastStore.addToast({
-      type: 'error',
-      message: error.response?.data?.error || 'Failed to regenerate client secret'
-    })
+    toastStore.error(error.response?.data?.error || 'Failed to regenerate client secret')
   } finally {
     regenerateLoading.value = false
   }
@@ -481,18 +475,12 @@ const handleDelete = async () => {
 
   deleteLoading.value = true
   try {
-    await servicePrincipalApi.delete(selectedServicePrincipal.value.id)
+    await servicePrincipalsApi.delete(selectedServicePrincipal.value.id)
     showDeleteModal.value = false
-    toastStore.addToast({
-      type: 'success',
-      message: 'Service principal deleted successfully'
-    })
+    toastStore.success('Service principal deleted successfully')
     await fetchServicePrincipals()
   } catch (error: any) {
-    toastStore.addToast({
-      type: 'error',
-      message: error.response?.data?.error || 'Failed to delete service principal'
-    })
+    toastStore.error(error.response?.data?.error || 'Failed to delete service principal')
   } finally {
     deleteLoading.value = false
   }
@@ -501,15 +489,9 @@ const handleDelete = async () => {
 const copyToClipboard = async (text: string, label: string) => {
   try {
     await navigator.clipboard.writeText(text)
-    toastStore.addToast({
-      type: 'success',
-      message: `${label} copied to clipboard`
-    })
+    toastStore.success(`${label} copied to clipboard`)
   } catch {
-    toastStore.addToast({
-      type: 'error',
-      message: 'Failed to copy to clipboard'
-    })
+    toastStore.error('Failed to copy to clipboard')
   }
 }
 
