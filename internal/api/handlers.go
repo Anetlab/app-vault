@@ -73,7 +73,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		User: UserResponse{
 			ID:        result.UserID.String(),
 			Email:     result.Email,
-			CreatedAt: time.Now().Format(time.RFC3339),
+			CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
 		},
 		SecretKey: result.SecretKey,
 	})
