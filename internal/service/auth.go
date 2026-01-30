@@ -165,11 +165,11 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*LoginRespo
 		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
 	if user == nil {
-		return nil, fmt.Errorf("authentication failed: invalid credentials")
+		return nil, fmt.Errorf("authentication failed: user not found")
 	}
 
 	if !crypto.CompareHashConstantTime(user.SecretKeyHash, req.SecretKey) {
-		return nil, fmt.Errorf("authentication failed: invalid credentials")
+		return nil, fmt.Errorf("authentication failed: secret key mismatch")
 	}
 
 	masterKey := crypto.DeriveMasterKey(req.Password, req.SecretKey, user.MasterKeySalt)
@@ -183,7 +183,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*LoginRespo
 
 	vaultKey, err := crypto.DecryptVaultKey(user.EncryptedVaultKey, kek, user.VaultKeyNonce)
 	if err != nil {
-		return nil, fmt.Errorf("authentication failed: invalid credentials")
+		return nil, fmt.Errorf("authentication failed: password incorrect")
 	}
 	crypto.ZeroBytes(vaultKey)
 

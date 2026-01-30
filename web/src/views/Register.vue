@@ -42,13 +42,17 @@
                 @click="copySecretKey"
                 class="text-primary hover:text-primary-hover text-sm flex items-center gap-2"
               >
-                <i class="fas fa-copy"></i>
+                <i :class="copied ? 'fas fa-check' : 'fas fa-copy'"></i>
                 {{ copied ? 'Copied!' : 'Copy' }}
               </button>
             </div>
-            <div class="font-mono text-lg text-white bg-dark-card p-3 rounded border border-gray-700 select-all">
+            <div class="font-mono text-sm text-white bg-dark-card p-3 rounded border border-gray-700 break-all">
               {{ generatedSecretKey }}
             </div>
+            <p class="text-xs text-gray-500 mt-2">
+              <i class="fas fa-info-circle mr-1"></i>
+              Click "Copy" button above to safely copy your secret key
+            </p>
           </div>
         </div>
 
@@ -234,7 +238,7 @@ async function handleRegister() {
     const result = await authStore.register(email.value, password.value)
     
     if (result.success && result.secretKey) {
-      generatedSecretKey.value = result.secretKey
+      generatedSecretKey.value = result.secretKey.trim()
       registrationComplete.value = true
       toastStore.success('Account created successfully!')
     } else {

@@ -13,7 +13,11 @@ export const authApi = {
   },
 
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await axios.post<AuthResponse>('/auth/login', data)
+    const response = await axios.post<AuthResponse>('/auth/login', {
+      email: data.email,
+      password: data.password,
+      secret_key: data.secretKey
+    })
     return response.data
   },
 

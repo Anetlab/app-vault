@@ -47,9 +47,12 @@ class ApiClient {
         if (error.response) {
           // Handle 401 Unauthorized
           if (error.response.status === 401) {
-            localStorage.removeItem('authToken')
-            sessionStorage.removeItem('secretKey')
-            window.location.href = '/login'
+            // Don't redirect on login/register endpoints - let the component handle it
+            if (error.config?.url && !error.config.url.includes('/auth/login') && !error.config.url.includes('/auth/register')) {
+              localStorage.removeItem('authToken')
+              sessionStorage.removeItem('secretKey')
+              window.location.href = '/login'
+            }
           }
 
           // Handle 403 Forbidden
