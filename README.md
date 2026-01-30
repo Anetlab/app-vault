@@ -4,6 +4,7 @@ A secure key management service inspired by Azure Key Vault and 1Password, writt
 
 ## Features
 
+### Core Features
 - **Strong Encryption**: XChaCha20-Poly1305 AEAD encryption for all secrets
 - **Zero-Knowledge Architecture**: Server never sees unencrypted secrets
 - **Key Derivation**: Argon2id with secure parameters for master key derivation
@@ -14,6 +15,24 @@ A secure key management service inspired by Azure Key Vault and 1Password, writt
 - **Secret Versioning**: Track changes to secrets over time
 - **Expiration Support**: Set expiration dates for secrets
 - **RESTful API**: Simple HTTP/JSON API
+
+### Production Features
+- **TLS 1.3**: Strong transport security with modern cipher suites
+- **Rate Limiting**: Per-IP and per-service-principal rate limiting
+- **Metrics & Monitoring**: Prometheus-compatible metrics endpoint
+- **Security Headers**: HSTS, CSP, X-Frame-Options, and more
+- **Health Checks**: Built-in liveness and readiness probes
+- **Request Size Limits**: DoS protection via request body size limits
+
+## Documentation
+
+- **[Getting Started](#quick-start)** - Quick setup guide
+- **[API Documentation](#api-documentation)** - Complete API reference
+- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment with TLS, monitoring, and best practices
+- **[Testing Guide](TESTING.md)** - Load testing, security testing, and validation procedures
+- **[Security](SECURITY.md)** - Security features, compliance, and vulnerability reporting
+- **[Examples](EXAMPLES.md)** - Code examples for common use cases
+- **[Contributing](CONTRIBUTING.md)** - How to contribute to the project
 
 ## Security Architecture
 
@@ -338,13 +357,26 @@ Content-Type: application/json
 ### Run Tests
 
 ```bash
+# All tests
 go test ./...
+
+# With coverage
+go test -cover ./...
+
+# Specific package
+go test ./internal/crypto -v
 ```
+
+See [TESTING.md](TESTING.md) for comprehensive testing guide including load testing and security testing.
 
 ### Build
 
 ```bash
+# Development build
 go build -o bin/securevault cmd/server/main.go
+
+# Production build with optimizations
+go build -ldflags="-s -w" -o bin/securevault cmd/server/main.go
 ```
 
 ### Run Migrations Manually
@@ -355,15 +387,55 @@ Migrations are automatically run on startup. To run them manually:
 psql -U postgres -d securevault -f migrations/001_initial_schema.sql
 ```
 
+## Production Deployment
+
+For production deployments, see the comprehensive [DEPLOYMENT.md](DEPLOYMENT.md) guide which covers:
+
+- TLS configuration with Let's Encrypt
+- Rate limiting setup
+- Prometheus metrics integration
+- Security hardening checklist
+- Reverse proxy configuration (Nginx/Caddy)
+- Systemd service setup
+- Performance tuning
+
+Quick production setup:
+
+```bash
+# 1. Set up environment variables
+cp .env.example .env
+# Edit .env with production values
+
+# 2. Generate TLS certificates
+./scripts/generate-certs.sh  # Linux/Mac
+# or
+.\scripts\generate-certs.ps1  # Windows
+
+# 3. Build and run
+go build -o bin/securevault cmd/server/main.go
+./bin/securevault
+```
+
 ## Security Considerations
 
+SecureVault implements multiple layers of security. Key points:
+
 1. **Change JWT Secret**: Always use a strong, random JWT secret in production
-2. **Use TLS**: Deploy behind a TLS terminator (nginx, load balancer)
-3. **Secure Database**: Use strong PostgreSQL passwords and restrict network access
-4. **Rate Limiting**: Consider adding rate limiting for production deployments
+2. **Use TLS**: Enable TLS 1.3 for all production deployments
+3. **Secure Database**: Use strong PostgreSQL passwords and SSL connections
+4. **Rate Limiting**: Enabled by default to prevent abuse
 5. **Backup Secret Key**: Users must securely store their secret key
 6. **Key Rotation**: Implement regular vault key rotation policies
 7. **Audit Logs**: Monitor audit logs for suspicious activity
+8. **Security Headers**: Automatically applied to all responses
+
+For detailed security information, see [SECURITY.md](SECURITY.md) including:
+- Encryption details (XChaCha20-Poly1305, Argon2id)
+- Authentication mechanisms (JWT, MFA)
+- TLS configuration
+- Rate limiting implementation
+- OWASP Top 10 compliance
+- Vulnerability reporting process
 
 ## Architecture
 
