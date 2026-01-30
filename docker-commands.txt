@@ -1,0 +1,35 @@
+# App Vault Docker Commands
+# Quick reference for Docker Compose operations
+
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+docker-compose logs -f appvault
+docker-compose logs -f postgres
+
+# Stop services
+docker-compose down
+
+# Rebuild and restart
+docker-compose up -d --build
+
+# View running containers
+docker-compose ps
+
+# Execute commands in containers
+docker-compose exec appvault sh
+docker-compose exec postgres psql -U postgres -d appvault
+
+# Database backup
+docker-compose exec postgres pg_dump -U postgres appvault > backup.sql
+
+# Database restore
+docker-compose exec -T postgres psql -U postgres appvault < backup.sql
+
+# Clean up (removes volumes)
+docker-compose down -v
+
+# View resource usage
+docker-compose stats

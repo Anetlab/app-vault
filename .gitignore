@@ -41,7 +41,14 @@ go.work.sum
 # Secrets and config with sensitive data
 *.key
 *.pem
+*.csr
+*.pfx
+*.p12
 secrets.txt
+
+# Certificate directories
+/certs/
+/certificates/
 
 # Database files
 *.db

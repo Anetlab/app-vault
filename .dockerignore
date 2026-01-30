@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+
+# Environment
+.env
+.env.local
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.exe~
+
+# Certificates (don't include in image)
+certs/
+certificates/
+*.key
+*.pem
+*.csr
+*.pfx
+*.p12
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation
+*.md
+docs/
+plans/
+
+# Testing
+*.test
+coverage.*
+*.coverprofile
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Scripts (not needed in container)
+scripts/
+
+# Instructions
+.github/
