@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/securevault/app-vault/internal/metrics"
 	"github.com/securevault/app-vault/internal/service"
 )
 
@@ -79,6 +80,7 @@ type LoginResponse struct {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := parseJSON(r, &req); err != nil {
+		metrics.GetMetrics().RecordAuthFailure()
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -89,10 +91,12 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		SecretKey: req.SecretKey,
 	})
 	if err != nil {
+		metrics.GetMetrics().RecordAuthFailure()
 		writeError(w, http.StatusUnauthorized, "authentication failed")
 		return
 	}
 
+	metrics.GetMetrics().RecordAuthSuccess()
 	writeJSON(w, http.StatusOK, LoginResponse{
 		Token:  result.Token,
 		UserID: result.UserID.String(),
@@ -176,6 +180,7 @@ func (h *Handler) CreateSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metrics.GetMetrics().RecordSecretCreate()
 	writeJSON(w, http.StatusCreated, CreateSecretResponse{
 		ID:        result.ID.String(),
 		Name:      result.Name,
@@ -241,6 +246,7 @@ func (h *Handler) GetSecretByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metrics.GetMetrics().RecordSecretRead()
 	response := GetSecretResponse{
 		ID:          result.ID.String(),
 		Name:        result.Name,
@@ -305,6 +311,7 @@ func (h *Handler) GetSecretByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metrics.GetMetrics().RecordSecretRead()
 	response := GetSecretResponse{
 		ID:          result.ID.String(),
 		Name:        result.Name,
@@ -409,6 +416,7 @@ func (h *Handler) DeleteSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metrics.GetMetrics().RecordSecretDelete()
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -451,6 +459,7 @@ func (h *Handler) RotateVaultKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metrics.GetMetrics().RecordKeyRotation()
 	writeJSON(w, http.StatusOK, RotateKeyResponse{
 		NewKeyVersionID:    result.NewKeyVersionID.String(),
 		SecretsReEncrypted: result.SecretsReEncrypted,

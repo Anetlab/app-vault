@@ -63,6 +63,11 @@ func (d *Database) Close() error {
 	return d.db.Close()
 }
 
+// Ping checks the database connection
+func (d *Database) Ping() error {
+	return d.db.Ping()
+}
+
 // User operations
 
 // CreateUser creates a new user in the database

@@ -7,29 +7,53 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/securevault/app-vault/internal/api"
 	"github.com/securevault/app-vault/internal/db"
+	"github.com/securevault/app-vault/internal/metrics"
+	"github.com/securevault/app-vault/internal/ratelimit"
+	"github.com/securevault/app-vault/internal/security"
 	"github.com/securevault/app-vault/internal/service"
 )
 
 // Config holds application configuration
 type Config struct {
-	ServerPort     string
-	DatabaseURL    string
-	JWTSecret      string
-	MigrationsPath string
+	ServerPort       string
+	DatabaseURL      string
+	JWTSecret        string
+	MigrationsPath   string
+	EnableTLS        bool
+	TLSCertFile      string
+	TLSKeyFile       string
+	RateLimitEnabled bool
+	RateLimitMax     int
+	RateLimitWindow  time.Duration
+	MaxRequestSize   int64
 }
 
 // loadConfig loads configuration from environment variables
 func loadConfig() *Config {
+	enableTLS := getEnv("ENABLE_TLS", "false") == "true"
+	rateLimitEnabled := getEnv("RATE_LIMIT_ENABLED", "true") == "true"
+	rateLimitMax, _ := strconv.Atoi(getEnv("RATE_LIMIT_MAX", "100"))
+	rateLimitWindowSec, _ := strconv.Atoi(getEnv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+	maxRequestSizeMB, _ := strconv.ParseInt(getEnv("MAX_REQUEST_SIZE_MB", "1"), 10, 64)
+
 	return &Config{
-		ServerPort:     getEnv("SERVER_PORT", "8080"),
-		DatabaseURL:    getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/securevault?sslmode=disable"),
-		JWTSecret:      getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
-		MigrationsPath: getEnv("MIGRATIONS_PATH", "migrations"),
+		ServerPort:       getEnv("SERVER_PORT", "8080"),
+		DatabaseURL:      getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/securevault?sslmode=disable"),
+		JWTSecret:        getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
+		MigrationsPath:   getEnv("MIGRATIONS_PATH", "migrations"),
+		EnableTLS:        enableTLS,
+		TLSCertFile:      getEnv("TLS_CERT_FILE", "certs/server.crt"),
+		TLSKeyFile:       getEnv("TLS_KEY_FILE", "certs/server.key"),
+		RateLimitEnabled: rateLimitEnabled,
+		RateLimitMax:     rateLimitMax,
+		RateLimitWindow:  time.Duration(rateLimitWindowSec) * time.Second,
+		MaxRequestSize:   maxRequestSizeMB * 1024 * 1024,
 	}
 }
 
@@ -71,13 +95,25 @@ func main() {
 
 	handler := api.NewHandler(authService, vaultService, rotationService)
 
+	// Initialize metrics
+	metricsInstance := metrics.GetMetrics()
+
+	// Initialize rate limiter
+	var rateLimiter *ratelimit.RateLimiter
+	if cfg.RateLimitEnabled {
+		rateLimiter = ratelimit.NewRateLimiter(cfg.RateLimitWindow, cfg.RateLimitMax)
+		log.Printf("Rate limiting enabled: %d requests per %s", cfg.RateLimitMax, cfg.RateLimitWindow)
+	}
+
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
-	})
+	// Metrics endpoint (no auth required for monitoring)
+	mux.HandleFunc("/metrics", metricsInstance.MetricsHandler())
+
+	// Health check with database status
+	mux.HandleFunc("/health", metrics.HealthHandler(func() bool {
+		return database.Ping() == nil
+	}))
 
 	mux.HandleFunc("/api/v1/auth/register", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -151,7 +187,25 @@ func main() {
 		handler.ChangePassword(w, r)
 	})))
 
-	finalHandler := api.RecoveryMiddleware(api.LoggingMiddleware(api.CORSMiddleware(mux)))
+	// Build middleware chain
+	finalHandler := api.RecoveryMiddleware(
+		api.LoggingMiddleware(
+			security.SecurityHeadersMiddleware(
+				security.ContentTypeMiddleware(
+					security.RequestSizeLimitMiddleware(cfg.MaxRequestSize)(
+						metrics.MetricsMiddleware(
+							api.CORSMiddleware(mux),
+						),
+					),
+				),
+			),
+		),
+	)
+
+	// Add rate limiting if enabled
+	if rateLimiter != nil {
+		finalHandler = rateLimiter.Middleware(finalHandler)
+	}
 
 	server := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
@@ -161,9 +215,23 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
+	// Configure TLS if enabled
+	if cfg.EnableTLS {
+		server.TLSConfig = security.GetTLSConfig()
+		log.Println("TLS enabled with TLS 1.3")
+	}
+
 	go func() {
 		log.Printf("Server listening on port %s", cfg.ServerPort)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var err error
+		if cfg.EnableTLS {
+			log.Printf("Starting HTTPS server with cert: %s", cfg.TLSCertFile)
+			err = server.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile)
+		} else {
+			log.Println("Starting HTTP server (WARNING: TLS disabled)")
+			err = server.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server error: %v", err)
 		}
 	}()
