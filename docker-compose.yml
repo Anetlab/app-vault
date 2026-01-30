@@ -1,10 +1,14 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (Optional - disable if using external DB)
+  # To use with postgres: docker-compose --profile with-postgres up
+  # To use external DB: docker-compose up (skips postgres)
   postgres:
     image: postgres:15-alpine
     container_name: appvault-postgres
+    profiles:
+      - with-postgres
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
@@ -19,6 +23,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - appvault-network
 
   # App Vault API Server
   appvault:
@@ -28,13 +34,20 @@ services:
     container_name: appvault-server
     env_file:
       - .env
+    environment:
+      # Database connection - configure these for external DB
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-appvault}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
     ports:
       - "${SERVER_PORT:-8888}:8888"
       - "${TLS_PORT:-8443}:8443"
-    depends_on:
-      postgres:
-        condition: service_healthy
     restart: unless-stopped
+    networks:
+      - appvault-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8888/health"]
       interval: 30s
@@ -56,11 +69,17 @@ services:
     depends_on:
       - appvault
     restart: unless-stopped
+    networks:
+      - appvault-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+networks:
+  appvault-network:
+    driver: bridge
 
 volumes:
   postgres_data:
