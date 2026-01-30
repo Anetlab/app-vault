@@ -11,6 +11,7 @@ import (
 
 	"github.com/app-vault/app-vault/internal/models"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -221,7 +222,7 @@ func (d *Database) GetSecretByName(ctx context.Context, userID uuid.UUID, name s
 	err := d.db.QueryRowContext(ctx, query, userID, name).Scan(
 		&secret.ID, &secret.UserID, &secret.KeyVersionID, &secret.Name,
 		&secret.EncryptedData, &secret.Nonce, &secret.SecretType,
-		&secret.Version, &previousID, &secret.Tags,
+		&secret.Version, &previousID, pq.Array(&secret.Tags),
 		&secret.CreatedAt, &secret.UpdatedAt, &expiresAt,
 		&secret.AccessCount, &lastAccessedAt)
 
@@ -263,7 +264,7 @@ func (d *Database) GetSecretByID(ctx context.Context, id uuid.UUID) (*models.Sec
 	err := d.db.QueryRowContext(ctx, query, id).Scan(
 		&secret.ID, &secret.UserID, &secret.KeyVersionID, &secret.Name,
 		&secret.EncryptedData, &secret.Nonce, &secret.SecretType,
-		&secret.Version, &previousID, &secret.Tags,
+		&secret.Version, &previousID, pq.Array(&secret.Tags),
 		&secret.CreatedAt, &secret.UpdatedAt, &expiresAt,
 		&secret.AccessCount, &lastAccessedAt)
 
@@ -314,7 +315,7 @@ func (d *Database) ListSecrets(ctx context.Context, userID uuid.UUID) ([]*models
 		err := rows.Scan(
 			&secret.ID, &secret.UserID, &secret.KeyVersionID, &secret.Name,
 			&secret.EncryptedData, &secret.Nonce, &secret.SecretType,
-			&secret.Version, &previousID, &secret.Tags,
+			&secret.Version, &previousID, pq.Array(&secret.Tags),
 			&secret.CreatedAt, &secret.UpdatedAt, &expiresAt,
 			&secret.AccessCount, &lastAccessedAt)
 
@@ -397,7 +398,7 @@ func (d *Database) GetSecretsByKeyVersion(ctx context.Context, keyVersionID uuid
 		err := rows.Scan(
 			&secret.ID, &secret.UserID, &secret.KeyVersionID, &secret.Name,
 			&secret.EncryptedData, &secret.Nonce, &secret.SecretType,
-			&secret.Version, &previousID, &secret.Tags,
+			&secret.Version, &previousID, pq.Array(&secret.Tags),
 			&secret.CreatedAt, &secret.UpdatedAt, &expiresAt,
 			&secret.AccessCount, &lastAccessedAt)
 
