@@ -9,6 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('authToken'))
   const user = ref<User | null>(null)
   const secretKey = ref<string | null>(sessionStorage.getItem('secretKey'))
+  const password = ref<string | null>(sessionStorage.getItem('vaultPassword'))
   const isAuthenticated = computed(() => !!token.value && !!secretKey.value)
 
   // Actions
@@ -36,17 +37,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(email: string, password: string, userSecretKey: string) {
+  async function login(email: string, userPassword: string, userSecretKey: string) {
     try {
-      const response = await authApi.login({ email, password, secretKey: userSecretKey })
+      const response = await authApi.login({ email, password: userPassword, secretKey: userSecretKey })
       
       // Store auth data
       token.value = response.token
       user.value = response.user
       secretKey.value = userSecretKey
+      password.value = userPassword
       
       apiClient.setAuthToken(response.token)
       apiClient.setSecretKey(userSecretKey)
+      apiClient.setPassword(userPassword)
       
       return {
         success: true,
@@ -71,6 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = null
       user.value = null
       secretKey.value = null
+      password.value = null
       apiClient.clearAuth()
     }
   }

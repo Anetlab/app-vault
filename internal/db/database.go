@@ -194,7 +194,7 @@ func (d *Database) CreateSecret(ctx context.Context, secret *models.Secret) erro
 	_, err := d.db.ExecContext(ctx, query,
 		secret.ID, secret.UserID, secret.KeyVersionID, secret.Name,
 		secret.EncryptedData, secret.Nonce, secret.SecretType,
-		secret.Version, secret.PreviousID, secret.Tags,
+		secret.Version, secret.PreviousID, pq.Array(secret.Tags),
 		secret.CreatedAt, secret.UpdatedAt, secret.ExpiresAt,
 		secret.AccessCount, secret.LastAccessedAt)
 

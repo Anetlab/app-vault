@@ -24,6 +24,7 @@ class ApiClient {
       (config: InternalAxiosRequestConfig) => {
         const token = localStorage.getItem('authToken')
         const secretKey = sessionStorage.getItem('secretKey')
+        const password = sessionStorage.getItem('vaultPassword')
 
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
@@ -31,6 +32,10 @@ class ApiClient {
 
         if (secretKey) {
           config.headers['X-Vault-Secret-Key'] = secretKey
+        }
+
+        if (password) {
+          config.headers['X-Vault-Password'] = password
         }
 
         return config
@@ -80,10 +85,16 @@ class ApiClient {
     sessionStorage.setItem('secretKey', secretKey)
   }
 
+  // Helper method to set password
+  public setPassword(password: string): void {
+    sessionStorage.setItem('vaultPassword', password)
+  }
+
   // Helper method to clear auth
   public clearAuth(): void {
     localStorage.removeItem('authToken')
     sessionStorage.removeItem('secretKey')
+    sessionStorage.removeItem('vaultPassword')
   }
 }
 
