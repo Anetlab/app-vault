@@ -390,3 +390,82 @@ func (s *AuthService) CreateServicePrincipal(ctx context.Context, req *CreateSer
 		ClientSecret: clientSecret,
 	}, nil
 }
+
+// ListServicePrincipals returns all service principals for a user
+func (s *AuthService) ListServicePrincipals(ctx context.Context, userID uuid.UUID) ([]*models.ServicePrincipal, error) {
+	return s.db.ListServicePrincipalsByUserID(ctx, userID)
+}
+
+// GetServicePrincipal retrieves a specific service principal
+func (s *AuthService) GetServicePrincipal(ctx context.Context, userID, spID uuid.UUID) (*models.ServicePrincipal, error) {
+	sp, err := s.db.GetServicePrincipalByID(ctx, spID)
+	if err != nil {
+		return nil, fmt.Errorf("service principal not found: %w", err)
+	}
+
+	// Verify ownership
+	if sp.UserID != userID {
+		return nil, fmt.Errorf("unauthorized access to service principal")
+	}
+
+	return sp, nil
+}
+
+// DeleteServicePrincipal deletes a service principal
+func (s *AuthService) DeleteServicePrincipal(ctx context.Context, userID, spID uuid.UUID) error {
+	// First verify ownership
+	sp, err := s.GetServicePrincipal(ctx, userID, spID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.DeleteServicePrincipal(ctx, spID); err != nil {
+		return fmt.Errorf("failed to delete service principal: %w", err)
+	}
+
+	// Audit log
+	auditLog := &models.AuditLog{
+		ID:         uuid.New(),
+		UserID:     userID,
+		Action:     "service_principal.deleted",
+		ResourceID: sp.ID.String(),
+		CreatedAt:  time.Now(),
+	}
+	_ = s.db.CreateAuditLog(ctx, auditLog)
+
+	return nil
+}
+
+// RegenerateServicePrincipalSecret generates a new client secret for a service principal
+func (s *AuthService) RegenerateServicePrincipalSecret(ctx context.Context, userID, spID uuid.UUID) (string, error) {
+	// First verify ownership
+	_, err := s.GetServicePrincipal(ctx, userID, spID)
+	if err != nil {
+		return "", err
+	}
+
+	// Generate new client secret
+	newClientSecret, err := crypto.GenerateClientSecret()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate client secret: %w", err)
+	}
+
+	newClientSecretHash := crypto.HashClientSecret(newClientSecret)
+
+	// Update in database
+	if err := s.db.UpdateServicePrincipalSecret(ctx, spID, []byte(newClientSecretHash)); err != nil {
+		return "", fmt.Errorf("failed to update service principal secret: %w", err)
+	}
+
+	// Audit log
+	auditLog := &models.AuditLog{
+		ID:         uuid.New(),
+		UserID:     userID,
+		Action:     "service_principal.secret_regenerated",
+		ResourceID: spID.String(),
+		CreatedAt:  time.Now(),
+	}
+	_ = s.db.CreateAuditLog(ctx, auditLog)
+
+	return newClientSecret, nil
+}

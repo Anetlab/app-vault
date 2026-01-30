@@ -520,3 +520,183 @@ func (h *Handler) GetKeyStatus(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, result)
 }
+
+// CreateServicePrincipalRequest is the request body for creating service principals
+type CreateServicePrincipalRequest struct {
+	Name           string   `json:"name"`
+	Description    string   `json:"description"`
+	Permissions    []string `json:"permissions"`
+	AllowedSecrets []string `json:"allowed_secrets"`
+	AllowedTags    []string `json:"allowed_tags"`
+	IPWhitelist    []string `json:"ip_whitelist"`
+	RateLimit      int      `json:"rate_limit"`
+	ExpiresAt      *string  `json:"expires_at,omitempty"`
+}
+
+// CreateServicePrincipal handles service principal creation
+func (h *Handler) CreateServicePrincipal(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserIDFromContext(r.Context())
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req CreateServicePrincipalRequest
+	if err := parseJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Validate required fields
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	// Parse expiration time if provided
+	var expiresAt *time.Time
+	if req.ExpiresAt != nil {
+		parsedTime, err := time.Parse(time.RFC3339, *req.ExpiresAt)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid expires_at format, use RFC3339")
+			return
+		}
+		expiresAt = &parsedTime
+	}
+
+	// Set default rate limit if not provided
+	rateLimit := req.RateLimit
+	if rateLimit == 0 {
+		rateLimit = 1000
+	}
+
+	// Set default permissions if not provided
+	permissions := req.Permissions
+	if len(permissions) == 0 {
+		permissions = []string{"read"}
+	}
+
+	result, err := h.authService.CreateServicePrincipal(r.Context(), &service.CreateServicePrincipalRequest{
+		UserID:         userID,
+		Name:           req.Name,
+		Description:    req.Description,
+		Permissions:    permissions,
+		AllowedSecrets: req.AllowedSecrets,
+		AllowedTags:    req.AllowedTags,
+		IPWhitelist:    req.IPWhitelist,
+		RateLimit:      rateLimit,
+		ExpiresAt:      expiresAt,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	metrics.GetMetrics().RecordAuthSuccess()
+
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"id":            result.ID,
+		"client_id":     result.ClientID,
+		"client_secret": result.ClientSecret,
+	})
+}
+
+// ListServicePrincipals handles listing service principals for a user
+func (h *Handler) ListServicePrincipals(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserIDFromContext(r.Context())
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	// Get all service principals for the user from database
+	servicePrincipals, err := h.authService.ListServicePrincipals(r.Context(), userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, servicePrincipals)
+}
+
+// GetServicePrincipal handles retrieving a specific service principal
+func (h *Handler) GetServicePrincipal(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserIDFromContext(r.Context())
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	// Extract service principal ID from URL path
+	idStr := r.URL.Path[len("/api/v1/service-principals/"):]
+	spID, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid service principal ID")
+		return
+	}
+
+	sp, err := h.authService.GetServicePrincipal(r.Context(), userID, spID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, sp)
+}
+
+// DeleteServicePrincipal handles service principal deletion
+func (h *Handler) DeleteServicePrincipal(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserIDFromContext(r.Context())
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	// Extract service principal ID from URL path
+	idStr := r.URL.Path[len("/api/v1/service-principals/"):]
+	spID, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid service principal ID")
+		return
+	}
+
+	if err := h.authService.DeleteServicePrincipal(r.Context(), userID, spID); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	metrics.GetMetrics().RecordAuthSuccess()
+
+	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+// RegenerateServicePrincipalSecret handles regenerating a service principal's secret
+func (h *Handler) RegenerateServicePrincipalSecret(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserIDFromContext(r.Context())
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	// Extract service principal ID from URL path
+	idStr := r.URL.Path[len("/api/v1/service-principals/"):]
+	// Remove "/regenerate" suffix
+	idStr = idStr[:len(idStr)-len("/regenerate")]
+	spID, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid service principal ID")
+		return
+	}
+
+	newSecret, err := h.authService.RegenerateServicePrincipalSecret(r.Context(), userID, spID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	metrics.GetMetrics().RecordAuthSuccess()
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"client_secret": newSecret,
+	})
+}

@@ -1,0 +1,6 @@
+# Ignore build output
+dist/
+dist-ssr/
+
+# Ignore nginx config in Docker builds (it's copied separately)
+# This file is used for production builds

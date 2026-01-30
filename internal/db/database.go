@@ -507,6 +507,133 @@ func (d *Database) UpdateServicePrincipalLastUsed(ctx context.Context, id uuid.U
 	return nil
 }
 
+// ListServicePrincipalsByUserID retrieves all service principals for a user
+func (d *Database) ListServicePrincipalsByUserID(ctx context.Context, userID uuid.UUID) ([]*models.ServicePrincipal, error) {
+	query := `
+		SELECT id, user_id, client_id, client_secret_hash, name, description,
+			permissions, allowed_secrets, allowed_tags, ip_whitelist,
+			rate_limit, is_active, expires_at, last_used_at,
+			created_at, updated_at
+		FROM service_principals
+		WHERE user_id = $1
+		ORDER BY created_at DESC`
+
+	rows, err := d.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list service principals: %w", err)
+	}
+	defer rows.Close()
+
+	var servicePrincipals []*models.ServicePrincipal
+	for rows.Next() {
+		sp := &models.ServicePrincipal{}
+		var expiresAt sql.NullTime
+		var lastUsedAt sql.NullTime
+
+		err := rows.Scan(
+			&sp.ID, &sp.UserID, &sp.ClientID, &sp.ClientSecretHash, &sp.Name, &sp.Description,
+			&sp.Permissions, &sp.AllowedSecrets, &sp.AllowedTags, &sp.IPWhitelist,
+			&sp.RateLimit, &sp.IsActive, &expiresAt, &lastUsedAt,
+			&sp.CreatedAt, &sp.UpdatedAt)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan service principal: %w", err)
+		}
+
+		if expiresAt.Valid {
+			sp.ExpiresAt = &expiresAt.Time
+		}
+		if lastUsedAt.Valid {
+			sp.LastUsedAt = &lastUsedAt.Time
+		}
+
+		servicePrincipals = append(servicePrincipals, sp)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating service principals: %w", err)
+	}
+
+	return servicePrincipals, nil
+}
+
+// GetServicePrincipalByID retrieves a service principal by ID
+func (d *Database) GetServicePrincipalByID(ctx context.Context, id uuid.UUID) (*models.ServicePrincipal, error) {
+	query := `
+		SELECT id, user_id, client_id, client_secret_hash, name, description,
+			permissions, allowed_secrets, allowed_tags, ip_whitelist,
+			rate_limit, is_active, expires_at, last_used_at,
+			created_at, updated_at
+		FROM service_principals
+		WHERE id = $1`
+
+	sp := &models.ServicePrincipal{}
+	var expiresAt sql.NullTime
+	var lastUsedAt sql.NullTime
+
+	err := d.db.QueryRowContext(ctx, query, id).Scan(
+		&sp.ID, &sp.UserID, &sp.ClientID, &sp.ClientSecretHash, &sp.Name, &sp.Description,
+		&sp.Permissions, &sp.AllowedSecrets, &sp.AllowedTags, &sp.IPWhitelist,
+		&sp.RateLimit, &sp.IsActive, &expiresAt, &lastUsedAt,
+		&sp.CreatedAt, &sp.UpdatedAt)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("service principal not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get service principal: %w", err)
+	}
+
+	if expiresAt.Valid {
+		sp.ExpiresAt = &expiresAt.Time
+	}
+	if lastUsedAt.Valid {
+		sp.LastUsedAt = &lastUsedAt.Time
+	}
+
+	return sp, nil
+}
+
+// DeleteServicePrincipal deletes a service principal
+func (d *Database) DeleteServicePrincipal(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM service_principals WHERE id = $1`
+	result, err := d.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete service principal: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("service principal not found")
+	}
+
+	return nil
+}
+
+// UpdateServicePrincipalSecret updates the client secret hash for a service principal
+func (d *Database) UpdateServicePrincipalSecret(ctx context.Context, id uuid.UUID, clientSecretHash []byte) error {
+	query := `UPDATE service_principals SET client_secret_hash = $1, updated_at = $2 WHERE id = $3`
+	result, err := d.db.ExecContext(ctx, query, clientSecretHash, time.Now(), id)
+	if err != nil {
+		return fmt.Errorf("failed to update service principal secret: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("service principal not found")
+	}
+
+	return nil
+}
+
 // KeyVersion operations
 
 // CreateKeyVersion creates a new key version

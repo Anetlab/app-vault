@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -185,6 +186,35 @@ func main() {
 			return
 		}
 		handler.ChangePassword(w, r)
+	})))
+
+	// Service Principal endpoints
+	mux.Handle("/api/v1/service-principals", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			handler.CreateServicePrincipal(w, r)
+		case http.MethodGet:
+			handler.ListServicePrincipals(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})))
+
+	mux.Handle("/api/v1/service-principals/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if this is a regenerate request
+		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/regenerate") {
+			handler.RegenerateServicePrincipalSecret(w, r)
+			return
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			handler.GetServicePrincipal(w, r)
+		case http.MethodDelete:
+			handler.DeleteServicePrincipal(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
 	})))
 
 	// Build middleware chain

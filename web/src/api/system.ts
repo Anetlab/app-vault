@@ -41,5 +41,26 @@ export const systemApi = {
   async health(): Promise<HealthCheck> {
     const response = await axios.get<HealthCheck>('/health')
     return response.data
+  },
+
+  async getKeyStatus(): Promise<{ status: any; history: any[] }> {
+    const response = await axios.get('/keys/status')
+    return response.data
+  },
+
+  async rotateKey(): Promise<void> {
+    await axios.post('/keys/rotate')
+  },
+
+  async getAuditLogs(params?: {
+    action?: string
+    status?: string
+    from_date?: string
+    to_date?: string
+    limit?: number
+    offset?: number
+  }): Promise<AuditLog[]> {
+    const response = await axios.get<AuditLog[]>('/audit-logs', { params })
+    return response.data
   }
 }
