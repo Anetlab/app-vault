@@ -223,7 +223,7 @@ type GetSecretResponse struct {
 	ID             string   `json:"id"`
 	Name           string   `json:"name"`
 	Value          string   `json:"value"`
-	PublicKey      *string  `json:"public_key,omitempty"`
+	PublicKey      *string  `json:"public_key"`
 	SecretType     string   `json:"secret_type"`
 	Version        int      `json:"version"`
 	Tags           []string `json:"tags"`

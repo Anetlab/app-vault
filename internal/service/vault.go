@@ -102,6 +102,12 @@ func (s *VaultService) CreateSecret(ctx context.Context, vaultKey []byte, req *C
 		AccessCount:   0,
 	}
 
+	// Generate a unique public key for this secret
+	publicKey, err := crypto.GenerateVaultKey()
+	if err == nil {
+		secret.PublicKey = publicKey
+	}
+
 	if err := s.db.CreateSecret(ctx, secret); err != nil {
 		return nil, fmt.Errorf("failed to create secret: %w", err)
 	}
@@ -263,9 +269,11 @@ func (s *VaultService) GetSecretByID(ctx context.Context, vaultKey []byte, userI
 	_ = s.db.CreateAuditLog(ctx, auditLog)
 
 	return &GetSecretResponse{
-		ID:    secret.ID,
-		Name:  secret.Name,
-		Value: string(decryptedValue), PublicKey: secret.PublicKey, SecretType: secret.SecretType,
+		ID:             secret.ID,
+		Name:           secret.Name,
+		Value:          string(decryptedValue),
+		PublicKey:      secret.PublicKey,
+		SecretType:     secret.SecretType,
 		Version:        secret.Version,
 		Tags:           secret.Tags,
 		CreatedAt:      secret.CreatedAt,
