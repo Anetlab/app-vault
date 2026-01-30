@@ -16,6 +16,9 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# Ensure migrations directory exists (create empty if not present)
+RUN mkdir -p migrations
+
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o appvault ./cmd/server
 
@@ -34,11 +37,11 @@ WORKDIR /home/appvault
 # Copy binary from builder
 COPY --from=builder /app/appvault .
 
-# Copy migrations if they exist
-COPY --chown=appvault:appvault migrations ./migrations/ 2>/dev/null || true
+# Copy migrations directory from builder (will exist even if empty)
+COPY --from=builder --chown=appvault:appvault /app/migrations ./migrations
 
 # Create certs directory
-RUN mkdir -p certs && chown -R appvault:appvault /home/appvault
+RUN mkdir -p ./certs && chown -R appvault:appvault /home/appvault
 
 # Switch to non-root user
 USER appvault
