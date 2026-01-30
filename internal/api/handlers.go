@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/base64"
 	"net/http"
 	"strings"
 	"time"
@@ -222,6 +223,7 @@ type GetSecretResponse struct {
 	ID             string   `json:"id"`
 	Name           string   `json:"name"`
 	Value          string   `json:"value"`
+	PublicKey      *string  `json:"public_key,omitempty"`
 	SecretType     string   `json:"secret_type"`
 	Version        int      `json:"version"`
 	Tags           []string `json:"tags"`
@@ -287,6 +289,10 @@ func (h *Handler) GetSecretByName(w http.ResponseWriter, r *http.Request) {
 		AccessCount: result.AccessCount,
 	}
 
+	if len(result.PublicKey) > 0 {
+		publicKeyStr := base64.StdEncoding.EncodeToString(result.PublicKey)
+		response.PublicKey = &publicKeyStr
+	}
 	if result.ExpiresAt != nil {
 		expiresAt := result.ExpiresAt.Format(time.RFC3339)
 		response.ExpiresAt = &expiresAt
@@ -352,6 +358,10 @@ func (h *Handler) GetSecretByID(w http.ResponseWriter, r *http.Request) {
 		AccessCount: result.AccessCount,
 	}
 
+	if len(result.PublicKey) > 0 {
+		publicKeyStr := base64.StdEncoding.EncodeToString(result.PublicKey)
+		response.PublicKey = &publicKeyStr
+	}
 	if result.ExpiresAt != nil {
 		expiresAt := result.ExpiresAt.Format(time.RFC3339)
 		response.ExpiresAt = &expiresAt

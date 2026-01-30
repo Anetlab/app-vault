@@ -63,6 +63,7 @@ type Secret struct {
 	Name           string
 	EncryptedData  []byte
 	Nonce          []byte
+	PublicKey      []byte // Public key for sharing with other projects
 	SecretType     string
 	Version        int
 	PreviousID     *uuid.UUID

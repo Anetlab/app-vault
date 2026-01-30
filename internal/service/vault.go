@@ -139,6 +139,7 @@ type GetSecretResponse struct {
 	ID             uuid.UUID
 	Name           string
 	Value          string
+	PublicKey      []byte
 	SecretType     string
 	Version        int
 	Tags           []string
@@ -199,6 +200,7 @@ func (s *VaultService) GetSecret(ctx context.Context, vaultKey []byte, req *GetS
 		ID:             secret.ID,
 		Name:           secret.Name,
 		Value:          string(decryptedValue),
+		PublicKey:      secret.PublicKey,
 		SecretType:     secret.SecretType,
 		Version:        secret.Version,
 		Tags:           secret.Tags,
@@ -261,10 +263,9 @@ func (s *VaultService) GetSecretByID(ctx context.Context, vaultKey []byte, userI
 	_ = s.db.CreateAuditLog(ctx, auditLog)
 
 	return &GetSecretResponse{
-		ID:             secret.ID,
-		Name:           secret.Name,
-		Value:          string(decryptedValue),
-		SecretType:     secret.SecretType,
+		ID:    secret.ID,
+		Name:  secret.Name,
+		Value: string(decryptedValue), PublicKey: secret.PublicKey, SecretType: secret.SecretType,
 		Version:        secret.Version,
 		Tags:           secret.Tags,
 		CreatedAt:      secret.CreatedAt,

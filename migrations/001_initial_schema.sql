@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS secrets (
     name VARCHAR(255) NOT NULL,
     encrypted_data BYTEA NOT NULL,
     nonce BYTEA NOT NULL,
+    public_key BYTEA,
     secret_type VARCHAR(50) NOT NULL,
     version INTEGER NOT NULL DEFAULT 1,
     previous_id UUID REFERENCES secrets(id),

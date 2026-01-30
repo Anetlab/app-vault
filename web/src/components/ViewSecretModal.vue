@@ -61,6 +61,26 @@
               </div>
             </div>
 
+            <!-- Public Key (if available) -->
+            <div v-if="secretValue.publicKey">
+              <label class="block text-sm text-gray-400 mb-2">Public Key (for other projects)</label>
+              <div class="relative p-4 bg-dark-bg rounded-lg border border-gray-700">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <span class="text-xs text-gray-500">Base64 encoded</span>
+                  <button
+                    @click="copyPublicKey"
+                    class="text-sm text-primary hover:text-primary-hover flex items-center gap-2"
+                  >
+                    <i class="fas fa-copy"></i>
+                    {{ publicKeyCopied ? 'Copied!' : 'Copy' }}
+                  </button>
+                </div>
+                <pre
+                  class="font-mono text-sm text-white whitespace-pre-wrap break-all max-h-32 overflow-y-auto"
+                >{{ secretValue.publicKey }}</pre>
+              </div>
+            </div>
+
             <!-- Secret Value -->
             <div>
               <div class="flex items-center justify-between mb-2">
@@ -145,6 +165,7 @@ const secretValue = ref<SecretWithValue | null>(null)
 const loading = ref(false)
 const showValue = ref(false)
 const copied = ref(false)
+const publicKeyCopied = ref(false)
 
 watch(() => props.show, async (newVal) => {
   if (newVal && props.secret) {
@@ -152,6 +173,7 @@ watch(() => props.show, async (newVal) => {
   } else {
     showValue.value = false
     copied.value = false
+    publicKeyCopied.value = false
   }
 })
 
@@ -185,6 +207,22 @@ async function copyValue() {
     }, 2000)
   } catch (error) {
     toastStore.error('Failed to copy to clipboard')
+  }
+}
+
+async function copyPublicKey() {
+  if (!secretValue.value?.publicKey) return
+  
+  try {
+    await navigator.clipboard.writeText(secretValue.value.publicKey)
+    publicKeyCopied.value = true
+    toastStore.success('Public key copied to clipboard')
+    
+    setTimeout(() => {
+      publicKeyCopied.value = false
+    }, 2000)
+  } catch (error) {
+    toastStore.error('Failed to copy public key')
   }
 }
 

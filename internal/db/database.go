@@ -177,13 +177,14 @@ func (d *Database) UpdateUserKeys(ctx context.Context, userID uuid.UUID, encrypt
 func (d *Database) CreateSecret(ctx context.Context, secret *models.Secret) error {
 	query := `
 		INSERT INTO secrets (
-			id, user_id, key_version_id, name, encrypted_data, nonce,
+			id, user_id, key_version_id, name, encrypted_data, nonce, public_key,
 			secret_type, version, previous_id, tags, created_at, updated_at,
 			expires_at, access_count, last_accessed_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		ON CONFLICT (user_id, name) DO UPDATE SET
 			encrypted_data = EXCLUDED.encrypted_data,
 			nonce = EXCLUDED.nonce,
+			public_key = EXCLUDED.public_key,
 			key_version_id = EXCLUDED.key_version_id,
 			secret_type = EXCLUDED.secret_type,
 			version = secrets.version + 1,
@@ -194,7 +195,7 @@ func (d *Database) CreateSecret(ctx context.Context, secret *models.Secret) erro
 
 	_, err := d.db.ExecContext(ctx, query,
 		secret.ID, secret.UserID, secret.KeyVersionID, secret.Name,
-		secret.EncryptedData, secret.Nonce, secret.SecretType,
+		secret.EncryptedData, secret.Nonce, secret.PublicKey, secret.SecretType,
 		secret.Version, secret.PreviousID, pq.Array(secret.Tags),
 		secret.CreatedAt, secret.UpdatedAt, secret.ExpiresAt,
 		secret.AccessCount, secret.LastAccessedAt)
@@ -208,7 +209,7 @@ func (d *Database) CreateSecret(ctx context.Context, secret *models.Secret) erro
 // GetSecretByName retrieves a secret by name
 func (d *Database) GetSecretByName(ctx context.Context, userID uuid.UUID, name string) (*models.Secret, error) {
 	query := `
-		SELECT id, user_id, key_version_id, name, encrypted_data, nonce,
+		SELECT id, user_id, key_version_id, name, encrypted_data, nonce, public_key,
 			secret_type, version, previous_id, tags, created_at, updated_at,
 			expires_at, access_count, last_accessed_at
 		FROM secrets
@@ -221,7 +222,7 @@ func (d *Database) GetSecretByName(ctx context.Context, userID uuid.UUID, name s
 
 	err := d.db.QueryRowContext(ctx, query, userID, name).Scan(
 		&secret.ID, &secret.UserID, &secret.KeyVersionID, &secret.Name,
-		&secret.EncryptedData, &secret.Nonce, &secret.SecretType,
+		&secret.EncryptedData, &secret.Nonce, &secret.PublicKey, &secret.SecretType,
 		&secret.Version, &previousID, pq.Array(&secret.Tags),
 		&secret.CreatedAt, &secret.UpdatedAt, &expiresAt,
 		&secret.AccessCount, &lastAccessedAt)
@@ -250,7 +251,7 @@ func (d *Database) GetSecretByName(ctx context.Context, userID uuid.UUID, name s
 // GetSecretByID retrieves a secret by ID
 func (d *Database) GetSecretByID(ctx context.Context, id uuid.UUID) (*models.Secret, error) {
 	query := `
-		SELECT id, user_id, key_version_id, name, encrypted_data, nonce,
+		SELECT id, user_id, key_version_id, name, encrypted_data, nonce, public_key,
 			secret_type, version, previous_id, tags, created_at, updated_at,
 			expires_at, access_count, last_accessed_at
 		FROM secrets
@@ -263,7 +264,7 @@ func (d *Database) GetSecretByID(ctx context.Context, id uuid.UUID) (*models.Sec
 
 	err := d.db.QueryRowContext(ctx, query, id).Scan(
 		&secret.ID, &secret.UserID, &secret.KeyVersionID, &secret.Name,
-		&secret.EncryptedData, &secret.Nonce, &secret.SecretType,
+		&secret.EncryptedData, &secret.Nonce, &secret.PublicKey, &secret.SecretType,
 		&secret.Version, &previousID, pq.Array(&secret.Tags),
 		&secret.CreatedAt, &secret.UpdatedAt, &expiresAt,
 		&secret.AccessCount, &lastAccessedAt)
@@ -292,7 +293,7 @@ func (d *Database) GetSecretByID(ctx context.Context, id uuid.UUID) (*models.Sec
 // ListSecrets lists all secrets for a user
 func (d *Database) ListSecrets(ctx context.Context, userID uuid.UUID) ([]*models.Secret, error) {
 	query := `
-		SELECT id, user_id, key_version_id, name, encrypted_data, nonce,
+		SELECT id, user_id, key_version_id, name, encrypted_data, nonce, public_key,
 			secret_type, version, previous_id, tags, created_at, updated_at,
 			expires_at, access_count, last_accessed_at
 		FROM secrets
@@ -314,7 +315,7 @@ func (d *Database) ListSecrets(ctx context.Context, userID uuid.UUID) ([]*models
 
 		err := rows.Scan(
 			&secret.ID, &secret.UserID, &secret.KeyVersionID, &secret.Name,
-			&secret.EncryptedData, &secret.Nonce, &secret.SecretType,
+			&secret.EncryptedData, &secret.Nonce, &secret.PublicKey, &secret.SecretType,
 			&secret.Version, &previousID, pq.Array(&secret.Tags),
 			&secret.CreatedAt, &secret.UpdatedAt, &expiresAt,
 			&secret.AccessCount, &lastAccessedAt)
@@ -376,7 +377,7 @@ func (d *Database) UpdateSecretAccess(ctx context.Context, id uuid.UUID) error {
 // GetSecretsByKeyVersion retrieves all secrets encrypted with a specific key version
 func (d *Database) GetSecretsByKeyVersion(ctx context.Context, keyVersionID uuid.UUID) ([]*models.Secret, error) {
 	query := `
-		SELECT id, user_id, key_version_id, name, encrypted_data, nonce,
+		SELECT id, user_id, key_version_id, name, encrypted_data, nonce, public_key,
 			secret_type, version, previous_id, tags, created_at, updated_at,
 			expires_at, access_count, last_accessed_at
 		FROM secrets
@@ -397,7 +398,7 @@ func (d *Database) GetSecretsByKeyVersion(ctx context.Context, keyVersionID uuid
 
 		err := rows.Scan(
 			&secret.ID, &secret.UserID, &secret.KeyVersionID, &secret.Name,
-			&secret.EncryptedData, &secret.Nonce, &secret.SecretType,
+			&secret.EncryptedData, &secret.Nonce, &secret.PublicKey, &secret.SecretType,
 			&secret.Version, &previousID, pq.Array(&secret.Tags),
 			&secret.CreatedAt, &secret.UpdatedAt, &expiresAt,
 			&secret.AccessCount, &lastAccessedAt)

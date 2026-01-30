@@ -38,6 +38,7 @@ export interface Secret {
 
 export interface SecretWithValue extends Secret {
   value: string
+  publicKey?: string
 }
 
 export interface CreateSecretRequest {
