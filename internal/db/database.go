@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/app-vault/app-vault/internal/models"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
-	"github.com/securevault/app-vault/internal/models"
 )
 
 // Database wraps the database connection

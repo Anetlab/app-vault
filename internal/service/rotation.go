@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/app-vault/app-vault/internal/crypto"
+	"github.com/app-vault/app-vault/internal/db"
+	"github.com/app-vault/app-vault/internal/models"
 	"github.com/google/uuid"
-	"github.com/securevault/app-vault/internal/crypto"
-	"github.com/securevault/app-vault/internal/db"
-	"github.com/securevault/app-vault/internal/models"
 )
 
 // RotationService handles key rotation operations

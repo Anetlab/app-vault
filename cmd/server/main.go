@@ -11,12 +11,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/securevault/app-vault/internal/api"
-	"github.com/securevault/app-vault/internal/db"
-	"github.com/securevault/app-vault/internal/metrics"
-	"github.com/securevault/app-vault/internal/ratelimit"
-	"github.com/securevault/app-vault/internal/security"
-	"github.com/securevault/app-vault/internal/service"
+	"github.com/app-vault/app-vault/internal/api"
+	"github.com/app-vault/app-vault/internal/db"
+	"github.com/app-vault/app-vault/internal/metrics"
+	"github.com/app-vault/app-vault/internal/ratelimit"
+	"github.com/app-vault/app-vault/internal/security"
+	"github.com/app-vault/app-vault/internal/service"
 )
 
 // Config holds application configuration
@@ -44,7 +44,7 @@ func loadConfig() *Config {
 
 	return &Config{
 		ServerPort:       getEnv("SERVER_PORT", "8080"),
-		DatabaseURL:      getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/securevault?sslmode=disable"),
+		DatabaseURL:      getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/appvault?sslmode=disable"),
 		JWTSecret:        getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
 		MigrationsPath:   getEnv("MIGRATIONS_PATH", "migrations"),
 		EnableTLS:        enableTLS,
@@ -66,7 +66,7 @@ func getEnv(key, defaultValue string) string {
 }
 
 func main() {
-	log.Println("Starting SecureVault server...")
+	log.Println("Starting App Vault server...")
 
 	cfg := loadConfig()
 

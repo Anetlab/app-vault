@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/app-vault/app-vault/internal/metrics"
+	"github.com/app-vault/app-vault/internal/service"
 	"github.com/google/uuid"
-	"github.com/securevault/app-vault/internal/metrics"
-	"github.com/securevault/app-vault/internal/service"
 )
 
 // Handler contains all API handlers

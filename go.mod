@@ -1,4 +1,4 @@
-module github.com/securevault/app-vault
+module github.com/app-vault/app-vault
 
 go 1.23
 

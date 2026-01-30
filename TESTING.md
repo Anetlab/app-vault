@@ -1,6 +1,6 @@
 # Testing Guide
 
-This guide covers testing procedures for SecureVault, including unit tests, integration tests, and production validation.
+This guide covers testing procedures for App Vault, including unit tests, integration tests, and production validation.
 
 ## Table of Contents
 
@@ -47,7 +47,7 @@ Integration tests require a running PostgreSQL instance.
 
 ```bash
 # Set test database URL
-export DATABASE_URL="postgres://test_user:test_pass@localhost:5432/securevault_test?sslmode=disable"
+export DATABASE_URL="postgres://test_user:test_pass@localhost:5432/App Vault_test?sslmode=disable"
 
 # Run migrations
 go run cmd/migrate/main.go
@@ -299,11 +299,11 @@ curl https://localhost:8080/metrics
 ```
 
 Verify metrics present:
-- `securevault_requests_total`
-- `securevault_auth_success_total`
-- `securevault_secrets_created_total`
-- `securevault_uptime_seconds`
-- `securevault_memory_alloc_bytes`
+- `App Vault_requests_total`
+- `App Vault_auth_success_total`
+- `App Vault_secrets_created_total`
+- `App Vault_uptime_seconds`
+- `App Vault_memory_alloc_bytes`
 
 ### Prometheus Integration
 
@@ -312,7 +312,7 @@ Test Prometheus can scrape:
 ```bash
 # Add to prometheus.yml
 scrape_configs:
-  - job_name: 'securevault'
+  - job_name: 'App Vault'
     static_configs:
       - targets: ['localhost:8080']
 
@@ -532,7 +532,7 @@ jobs:
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
         env:
-          DATABASE_URL: postgres://postgres:test@localhost:5432/securevault_test?sslmode=disable
+          DATABASE_URL: postgres://postgres:test@localhost:5432/App Vault_test?sslmode=disable
       
       - name: Upload coverage
         uses: codecov/codecov-action@v3

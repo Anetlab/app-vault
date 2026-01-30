@@ -1,4 +1,4 @@
-﻿package metrics
+package metrics
 
 import (
 "fmt"
@@ -115,53 +115,53 @@ uptime := time.Since(m.startTime).Seconds()
 var memStats runtime.MemStats
 runtime.ReadMemStats(&memStats)
 
-fmt.Fprintf(w, "# HELP securevault_uptime_seconds Server uptime in seconds\n")
-fmt.Fprintf(w, "# TYPE securevault_uptime_seconds gauge\n")
-fmt.Fprintf(w, "securevault_uptime_seconds %.2f\n", uptime)
+fmt.Fprintf(w, "# HELP appvault_uptime_seconds Server uptime in seconds\n")
+fmt.Fprintf(w, "# TYPE appvault_uptime_seconds gauge\n")
+fmt.Fprintf(w, "appvault_uptime_seconds %.2f\n", uptime)
 
-fmt.Fprintf(w, "\n# HELP securevault_requests_total Total number of requests\n")
-fmt.Fprintf(w, "# TYPE securevault_requests_total counter\n")
-fmt.Fprintf(w, "securevault_requests_total %d\n", m.requestCount.Load())
+fmt.Fprintf(w, "\n# HELP appvault_requests_total Total number of requests\n")
+fmt.Fprintf(w, "# TYPE appvault_requests_total counter\n")
+fmt.Fprintf(w, "appvault_requests_total %d\n", m.requestCount.Load())
 
-fmt.Fprintf(w, "\n# HELP securevault_errors_total Total number of errors\n")
-fmt.Fprintf(w, "# TYPE securevault_errors_total counter\n")
-fmt.Fprintf(w, "securevault_errors_total %d\n", m.errorCount.Load())
+fmt.Fprintf(w, "\n# HELP appvault_errors_total Total number of errors\n")
+fmt.Fprintf(w, "# TYPE appvault_errors_total counter\n")
+fmt.Fprintf(w, "appvault_errors_total %d\n", m.errorCount.Load())
 
-fmt.Fprintf(w, "\n# HELP securevault_auth_success_total Successful authentications\n")
-fmt.Fprintf(w, "# TYPE securevault_auth_success_total counter\n")
-fmt.Fprintf(w, "securevault_auth_success_total %d\n", m.authSuccessCount.Load())
+fmt.Fprintf(w, "\n# HELP appvault_auth_success_total Successful authentications\n")
+fmt.Fprintf(w, "# TYPE appvault_auth_success_total counter\n")
+fmt.Fprintf(w, "appvault_auth_success_total %d\n", m.authSuccessCount.Load())
 
-fmt.Fprintf(w, "\n# HELP securevault_auth_failure_total Failed authentications\n")
-fmt.Fprintf(w, "# TYPE securevault_auth_failure_total counter\n")
-fmt.Fprintf(w, "securevault_auth_failure_total %d\n", m.authFailureCount.Load())
+fmt.Fprintf(w, "\n# HELP appvault_auth_failure_total Failed authentications\n")
+fmt.Fprintf(w, "# TYPE appvault_auth_failure_total counter\n")
+fmt.Fprintf(w, "appvault_auth_failure_total %d\n", m.authFailureCount.Load())
 
-fmt.Fprintf(w, "\n# HELP securevault_secrets_created_total Secrets created\n")
-fmt.Fprintf(w, "# TYPE securevault_secrets_created_total counter\n")
-fmt.Fprintf(w, "securevault_secrets_created_total %d\n", m.secretCreateCount.Load())
+fmt.Fprintf(w, "\n# HELP appvault_secrets_created_total Secrets created\n")
+fmt.Fprintf(w, "# TYPE appvault_secrets_created_total counter\n")
+fmt.Fprintf(w, "appvault_secrets_created_total %d\n", m.secretCreateCount.Load())
 
-fmt.Fprintf(w, "\n# HELP securevault_secrets_read_total Secrets read\n")
-fmt.Fprintf(w, "# TYPE securevault_secrets_read_total counter\n")
-fmt.Fprintf(w, "securevault_secrets_read_total %d\n", m.secretReadCount.Load())
+fmt.Fprintf(w, "\n# HELP appvault_secrets_read_total Secrets read\n")
+fmt.Fprintf(w, "# TYPE appvault_secrets_read_total counter\n")
+fmt.Fprintf(w, "appvault_secrets_read_total %d\n", m.secretReadCount.Load())
 
-fmt.Fprintf(w, "\n# HELP securevault_secrets_deleted_total Secrets deleted\n")
-fmt.Fprintf(w, "# TYPE securevault_secrets_deleted_total counter\n")
-fmt.Fprintf(w, "securevault_secrets_deleted_total %d\n", m.secretDeleteCount.Load())
+fmt.Fprintf(w, "\n# HELP appvault_secrets_deleted_total Secrets deleted\n")
+fmt.Fprintf(w, "# TYPE appvault_secrets_deleted_total counter\n")
+fmt.Fprintf(w, "appvault_secrets_deleted_total %d\n", m.secretDeleteCount.Load())
 
-fmt.Fprintf(w, "\n# HELP securevault_key_rotations_total Key rotations performed\n")
-fmt.Fprintf(w, "# TYPE securevault_key_rotations_total counter\n")
-fmt.Fprintf(w, "securevault_key_rotations_total %d\n", m.keyRotationCount.Load())
+fmt.Fprintf(w, "\n# HELP appvault_key_rotations_total Key rotations performed\n")
+fmt.Fprintf(w, "# TYPE appvault_key_rotations_total counter\n")
+fmt.Fprintf(w, "appvault_key_rotations_total %d\n", m.keyRotationCount.Load())
 
-fmt.Fprintf(w, "\n# HELP securevault_memory_alloc_bytes Memory allocated in bytes\n")
-fmt.Fprintf(w, "# TYPE securevault_memory_alloc_bytes gauge\n")
-fmt.Fprintf(w, "securevault_memory_alloc_bytes %d\n", memStats.Alloc)
+fmt.Fprintf(w, "\n# HELP appvault_memory_alloc_bytes Memory allocated in bytes\n")
+fmt.Fprintf(w, "# TYPE appvault_memory_alloc_bytes gauge\n")
+fmt.Fprintf(w, "appvault_memory_alloc_bytes %d\n", memStats.Alloc)
 
-fmt.Fprintf(w, "\n# HELP securevault_memory_sys_bytes Total memory from system\n")
-fmt.Fprintf(w, "# TYPE securevault_memory_sys_bytes gauge\n")
-fmt.Fprintf(w, "securevault_memory_sys_bytes %d\n", memStats.Sys)
+fmt.Fprintf(w, "\n# HELP appvault_memory_sys_bytes Total memory from system\n")
+fmt.Fprintf(w, "# TYPE appvault_memory_sys_bytes gauge\n")
+fmt.Fprintf(w, "appvault_memory_sys_bytes %d\n", memStats.Sys)
 
-fmt.Fprintf(w, "\n# HELP securevault_goroutines Number of goroutines\n")
-fmt.Fprintf(w, "# TYPE securevault_goroutines gauge\n")
-fmt.Fprintf(w, "securevault_goroutines %d\n", runtime.NumGoroutine())
+fmt.Fprintf(w, "\n# HELP appvault_goroutines Number of goroutines\n")
+fmt.Fprintf(w, "# TYPE appvault_goroutines gauge\n")
+fmt.Fprintf(w, "appvault_goroutines %d\n", runtime.NumGoroutine())
 
 m.requestDurations.Range(func(key, value interface{}) bool {
 endpoint := key.(string)
@@ -172,10 +172,10 @@ if count > 0 {
 total := stats.totalMs.Load()
 avg := float64(total) / float64(count)
 
-fmt.Fprintf(w, "\n# HELP securevault_request_duration_ms Request duration for %s\n", endpoint)
-fmt.Fprintf(w, "securevault_request_duration_ms{endpoint=\"%s\",stat=\"avg\"} %.2f\n", endpoint, avg)
-fmt.Fprintf(w, "securevault_request_duration_ms{endpoint=\"%s\",stat=\"min\"} %d\n", endpoint, stats.minMs.Load())
-fmt.Fprintf(w, "securevault_request_duration_ms{endpoint=\"%s\",stat=\"max\"} %d\n", endpoint, stats.maxMs.Load())
+fmt.Fprintf(w, "\n# HELP appvault_request_duration_ms Request duration for %s\n", endpoint)
+fmt.Fprintf(w, "appvault_request_duration_ms{endpoint=\"%s\",stat=\"avg\"} %.2f\n", endpoint, avg)
+fmt.Fprintf(w, "appvault_request_duration_ms{endpoint=\"%s\",stat=\"min\"} %d\n", endpoint, stats.minMs.Load())
+fmt.Fprintf(w, "appvault_request_duration_ms{endpoint=\"%s\",stat=\"max\"} %d\n", endpoint, stats.maxMs.Load())
 }
 return true
 })

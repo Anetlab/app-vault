@@ -1,6 +1,6 @@
-# SecureVault
+# App Vault
 
-A secure key management service inspired by Azure Key Vault and 1Password, written in Go with PostgreSQL storage. SecureVault provides enterprise-grade secret management with strong encryption and multiple authentication methods.
+A secure key management service inspired by Azure Key Vault and 1Password, written in Go with PostgreSQL storage. App Vault provides enterprise-grade secret management with strong encryption and multiple authentication methods.
 
 ## Features
 
@@ -36,7 +36,7 @@ A secure key management service inspired by Azure Key Vault and 1Password, writt
 
 ## Security Architecture
 
-SecureVault implements a 1Password-inspired security model:
+App Vault implements a 1Password-inspired security model:
 
 1. **Master Key**: Derived from `password + secretKey` using Argon2id
 2. **Vault Key**: Per-user encryption key for secrets
@@ -60,7 +60,7 @@ SecureVault implements a 1Password-inspired security model:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/securevault/app-vault.git
+git clone https://github.com/App Vault/app-vault.git
 cd app-vault
 ```
 
@@ -71,12 +71,12 @@ go mod download
 
 3. Set up PostgreSQL:
 ```bash
-createdb securevault
+createdb App Vault
 ```
 
 4. Configure environment variables:
 ```bash
-export DATABASE_URL="postgres://postgres:postgres@localhost:5432/securevault?sslmode=disable"
+export DATABASE_URL="postgres://postgres:postgres@localhost:5432/App Vault?sslmode=disable"
 export JWT_SECRET="your-secret-key-change-this-in-production"
 export SERVER_PORT="8080"
 ```
@@ -347,7 +347,7 @@ Content-Type: application/json
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://postgres:postgres@localhost:5432/securevault?sslmode=disable` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgres://postgres:postgres@localhost:5432/App Vault?sslmode=disable` |
 | `JWT_SECRET` | Secret key for JWT signing | `your-secret-key-change-this-in-production` |
 | `SERVER_PORT` | Server port | `8080` |
 | `MIGRATIONS_PATH` | Path to SQL migration files | `migrations` |
@@ -373,10 +373,10 @@ See [TESTING.md](TESTING.md) for comprehensive testing guide including load test
 
 ```bash
 # Development build
-go build -o bin/securevault cmd/server/main.go
+go build -o bin/App Vault cmd/server/main.go
 
 # Production build with optimizations
-go build -ldflags="-s -w" -o bin/securevault cmd/server/main.go
+go build -ldflags="-s -w" -o bin/App Vault cmd/server/main.go
 ```
 
 ### Run Migrations Manually
@@ -384,7 +384,7 @@ go build -ldflags="-s -w" -o bin/securevault cmd/server/main.go
 Migrations are automatically run on startup. To run them manually:
 
 ```bash
-psql -U postgres -d securevault -f migrations/001_initial_schema.sql
+psql -U postgres -d App Vault -f migrations/001_initial_schema.sql
 ```
 
 ## Production Deployment
@@ -412,13 +412,13 @@ cp .env.example .env
 .\scripts\generate-certs.ps1  # Windows
 
 # 3. Build and run
-go build -o bin/securevault cmd/server/main.go
-./bin/securevault
+go build -o bin/App Vault cmd/server/main.go
+./bin/App Vault
 ```
 
 ## Security Considerations
 
-SecureVault implements multiple layers of security. Key points:
+App Vault implements multiple layers of security. Key points:
 
 1. **Change JWT Secret**: Always use a strong, random JWT secret in production
 2. **Use TLS**: Enable TLS 1.3 for all production deployments

@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/app-vault/app-vault/internal/service"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/securevault/app-vault/internal/service"
 )
 
 // contextKey is a custom type for context keys

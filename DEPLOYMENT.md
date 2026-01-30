@@ -1,6 +1,6 @@
-﻿# Production Deployment Guide
+# Production Deployment Guide
 
-This guide covers deploying SecureVault in a production environment with all security features enabled.
+This guide covers deploying App Vault in a production environment with all security features enabled.
 
 ## Table of Contents
 
@@ -47,7 +47,7 @@ TLS_KEY_FILE=certs/server.key
 
 ### TLS Configuration Details
 
-SecureVault uses:
+App Vault uses:
 - **TLS 1.3** minimum version
 - **Strong cipher suites**: AES-256-GCM, AES-128-GCM, ChaCha20-Poly1305
 - **Curve preferences**: X25519, P-256
@@ -82,34 +82,34 @@ X-RateLimit-Window: 60
 
 ## Monitoring & Metrics
 
-SecureVault exposes Prometheus-compatible metrics at `/metrics`.
+App Vault exposes Prometheus-compatible metrics at `/metrics`.
 
 ### Available Metrics
 
 **Counters:**
-- `securevault_requests_total` - Total HTTP requests
-- `securevault_errors_total` - Total errors
-- `securevault_auth_success_total` - Successful authentications
-- `securevault_auth_failure_total` - Failed authentications
-- `securevault_secrets_created_total` - Secrets created
-- `securevault_secrets_read_total` - Secrets read
-- `securevault_secrets_deleted_total` - Secrets deleted
-- `securevault_key_rotations_total` - Key rotations
+- `App Vault_requests_total` - Total HTTP requests
+- `App Vault_errors_total` - Total errors
+- `App Vault_auth_success_total` - Successful authentications
+- `App Vault_auth_failure_total` - Failed authentications
+- `App Vault_secrets_created_total` - Secrets created
+- `App Vault_secrets_read_total` - Secrets read
+- `App Vault_secrets_deleted_total` - Secrets deleted
+- `App Vault_key_rotations_total` - Key rotations
 
 **Gauges:**
-- `securevault_uptime_seconds` - Server uptime
-- `securevault_memory_alloc_bytes` - Allocated memory
-- `securevault_memory_sys_bytes` - System memory
-- `securevault_goroutines` - Number of goroutines
+- `App Vault_uptime_seconds` - Server uptime
+- `App Vault_memory_alloc_bytes` - Allocated memory
+- `App Vault_memory_sys_bytes` - System memory
+- `App Vault_goroutines` - Number of goroutines
 
 **Histograms:**
-- `securevault_request_duration_ms` - Request durations by endpoint
+- `App Vault_request_duration_ms` - Request durations by endpoint
 
 ### Prometheus Configuration
 
 ```yaml
 scrape_configs:
-  - job_name: ''securevault''
+  - job_name: ''App Vault''
     static_configs:
       - targets: [''localhost:8080'']
     metrics_path: /metrics
@@ -131,7 +131,7 @@ Returns HTTP 503 if database is unhealthy.
 
 ## Security Headers
 
-SecureVault automatically adds the following security headers to all responses:
+App Vault automatically adds the following security headers to all responses:
 
 - **Strict-Transport-Security**: Forces HTTPS for 1 year
 - **X-Frame-Options**: Prevents clickjacking (DENY)
@@ -158,15 +158,15 @@ Default is 1MB. Requests exceeding this will be rejected with HTTP 413.
 1. **Create dedicated database and user:**
 
 ```sql
-CREATE DATABASE securevault;
-CREATE USER securevault_user WITH ENCRYPTED PASSWORD ''strong_password_here'';
-GRANT ALL PRIVILEGES ON DATABASE securevault TO securevault_user;
+CREATE DATABASE App Vault;
+CREATE USER App Vault_user WITH ENCRYPTED PASSWORD ''strong_password_here'';
+GRANT ALL PRIVILEGES ON DATABASE App Vault TO App Vault_user;
 ```
 
 2. **Enable SSL connections:**
 
 ```env
-DATABASE_URL=postgres://securevault_user:password@localhost:5432/securevault?sslmode=require
+DATABASE_URL=postgres://App Vault_user:password@localhost:5432/App Vault?sslmode=require
 ```
 
 3. **Connection pooling:**
@@ -180,10 +180,10 @@ The application configures:
 
 ```bash
 # Daily backup
-pg_dump securevault > backup_$(date +%Y%m%d).sql
+pg_dump App Vault > backup_$(date +%Y%m%d).sql
 
 # Restore
-psql securevault < backup_20240101.sql
+psql App Vault < backup_20240101.sql
 ```
 
 ## Environment Variables
@@ -192,7 +192,7 @@ psql securevault < backup_20240101.sql
 
 ```env
 SERVER_PORT=8080
-DATABASE_URL=postgres://user:pass@host:5432/securevault?sslmode=require
+DATABASE_URL=postgres://user:pass@host:5432/App Vault?sslmode=require
 JWT_SECRET=generate-a-strong-random-secret-here
 ```
 
@@ -255,7 +255,7 @@ go run -c ''package main; import("crypto/rand"; "encoding/base64"; "os"); func m
 ### Reverse Proxy (Nginx Example)
 
 ```nginx
-upstream securevault {
+upstream App Vault {
     server localhost:8080;
 }
 
@@ -270,7 +270,7 @@ server {
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
     location / {
-        proxy_pass http://securevault;
+        proxy_pass http://App Vault;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -281,26 +281,26 @@ server {
     location /metrics {
         allow 10.0.0.0/8;  # Internal network only
         deny all;
-        proxy_pass http://securevault;
+        proxy_pass http://App Vault;
     }
 }
 ```
 
 ### Systemd Service
 
-Create `/etc/systemd/system/securevault.service`:
+Create `/etc/systemd/system/App Vault.service`:
 
 ```ini
 [Unit]
-Description=SecureVault API Server
+Description=App Vault API Server
 After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=securevault
-WorkingDirectory=/opt/securevault
-EnvironmentFile=/opt/securevault/.env
-ExecStart=/opt/securevault/securevault
+User=App Vault
+WorkingDirectory=/opt/App Vault
+EnvironmentFile=/opt/App Vault/.env
+ExecStart=/opt/App Vault/App Vault
 Restart=on-failure
 RestartSec=5s
 
@@ -309,7 +309,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/securevault/certs
+ReadWritePaths=/opt/App Vault/certs
 
 [Install]
 WantedBy=multi-user.target
@@ -318,14 +318,14 @@ WantedBy=multi-user.target
 Enable and start:
 
 ```bash
-sudo systemctl enable securevault
-sudo systemctl start securevault
-sudo systemctl status securevault
+sudo systemctl enable App Vault
+sudo systemctl start App Vault
+sudo systemctl status App Vault
 ```
 
 ### Monitoring with Prometheus & Grafana
 
-1. **Add SecureVault to Prometheus targets**
+1. **Add App Vault to Prometheus targets**
 2. **Import Grafana dashboard** (see grafana-dashboard.json)
 3. **Set up alerts:**
    - High error rate
@@ -339,10 +339,10 @@ Application logs to stdout. Capture with:
 
 ```bash
 # Systemd journal
-sudo journalctl -u securevault -f
+sudo journalctl -u App Vault -f
 
 # Or redirect to file
-./securevault 2>&1 | tee -a securevault.log
+./App Vault 2>&1 | tee -a App Vault.log
 ```
 
 ## Performance Tuning
@@ -419,5 +419,5 @@ For high-traffic deployments, consider:
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/securevault/app-vault/issues
-- Documentation: https://github.com/securevault/app-vault
+- GitHub Issues: https://github.com/App Vault/app-vault/issues
+- Documentation: https://github.com/App Vault/app-vault

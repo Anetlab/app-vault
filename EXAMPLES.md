@@ -1,10 +1,10 @@
-# SecureVault API Examples
+# App Vault API Examples
 
-This document provides practical examples of using the SecureVault API.
+This document provides practical examples of using the App Vault API.
 
 ## Prerequisites
 
-- SecureVault server running on `http://localhost:8080`
+- App Vault server running on `http://localhost:8080`
 - PostgreSQL database configured
 - `curl` or similar HTTP client
 
@@ -277,7 +277,7 @@ Create a `.env` file:
 
 ```bash
 SERVER_PORT=8080
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/securevault?sslmode=disable
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/App Vault?sslmode=disable
 JWT_SECRET=my-super-secret-jwt-key-change-in-production
 MIGRATIONS_PATH=migrations
 ```
@@ -285,9 +285,9 @@ MIGRATIONS_PATH=migrations
 Start PostgreSQL:
 
 ```bash
-docker run -d --name securevault-postgres \
+docker run -d --name App Vault-postgres \
   -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=securevault \
+  -e POSTGRES_DB=App Vault \
   -p 5432:5432 \
   postgres:15
 ```

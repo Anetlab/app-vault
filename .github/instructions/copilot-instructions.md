@@ -1,10 +1,10 @@
-# Copilot Instructions — SecureVault (Go + PostgreSQL)
+# Copilot Instructions — App Vault (Go + PostgreSQL)
 
 > **Purpose**: This document tells GitHub Copilot (and contributors) how to write code for this repository. Follow these rules when generating or modifying code.
 
 ## Project Summary
 
-SecureVault is a Key Vault–like secret management service written in **Go** with **PostgreSQL** storage. It aims for strong security properties inspired by Azure Key Vault and 1Password:
+App Vault is a Key Vault–like secret management service written in **Go** with **PostgreSQL** storage. It aims for strong security properties inspired by Azure Key Vault and 1Password:
 
 * Secrets are encrypted at rest using **XChaCha20-Poly1305**.
 * A **Master Key** is derived using **Argon2id** from `(password + secretKey)`.

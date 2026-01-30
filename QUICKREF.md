@@ -1,6 +1,6 @@
-# SecureVault Quick Reference
+# App Vault Quick Reference
 
-Quick command reference for common tasks with SecureVault.
+Quick command reference for common tasks with App Vault.
 
 ## Environment Setup
 
@@ -9,7 +9,7 @@ Quick command reference for common tasks with SecureVault.
 cp .env.example .env
 
 # Required variables
-DATABASE_URL=postgres://user:pass@localhost:5432/securevault?sslmode=require
+DATABASE_URL=postgres://user:pass@localhost:5432/App Vault?sslmode=require
 JWT_SECRET=$(openssl rand -base64 32)
 SERVER_PORT=8080
 
@@ -28,13 +28,13 @@ RATE_LIMIT_WINDOW_SECONDS=60
 go mod download
 
 # Build
-go build -o bin/securevault cmd/server/main.go
+go build -o bin/App Vault cmd/server/main.go
 
 # Run
-./bin/securevault
+./bin/App Vault
 
 # Run with custom port
-SERVER_PORT=9090 ./bin/securevault
+SERVER_PORT=9090 ./bin/App Vault
 ```
 
 ## Testing
@@ -144,25 +144,25 @@ curl -i http://localhost:8080/health | grep X-RateLimit
 
 ```bash
 # Create database
-createdb securevault
+createdb App Vault
 
 # Connect
-psql securevault
+psql App Vault
 
 # Run migrations
-psql securevault < migrations/001_initial_schema.sql
+psql App Vault < migrations/001_initial_schema.sql
 
 # Backup
-pg_dump securevault > backup.sql
+pg_dump App Vault > backup.sql
 
 # Restore
-psql securevault < backup.sql
+psql App Vault < backup.sql
 
 # Check tables
-psql securevault -c "\dt"
+psql App Vault -c "\dt"
 
 # View audit logs
-psql securevault -c "SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 10;"
+psql App Vault -c "SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 10;"
 ```
 
 ## TLS Setup
@@ -190,26 +190,26 @@ openssl s_client -connect localhost:8080 -tls1_3
 FROM golang:1.23-alpine AS builder
 WORKDIR /app
 COPY . .
-RUN go build -o securevault cmd/server/main.go
+RUN go build -o App Vault cmd/server/main.go
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
-COPY --from=builder /app/securevault .
+COPY --from=builder /app/App Vault .
 COPY --from=builder /app/migrations ./migrations
 EXPOSE 8080
-CMD ["./securevault"]
+CMD ["./App Vault"]
 ```
 
 ```bash
 # Build
-docker build -t securevault:latest .
+docker build -t App Vault:latest .
 
 # Run
 docker run -p 8080:8080 \
   -e DATABASE_URL="postgres://..." \
   -e JWT_SECRET="..." \
-  securevault:latest
+  App Vault:latest
 ```
 
 ## Common Workflows
@@ -222,13 +222,13 @@ cp .env.example .env
 # Edit .env
 
 # 2. Create database
-createdb securevault
+createdb App Vault
 
 # 3. Build
-go build -o bin/securevault cmd/server/main.go
+go build -o bin/App Vault cmd/server/main.go
 
 # 4. Run (migrations run automatically)
-./bin/securevault
+./bin/App Vault
 ```
 
 ### Adding a New User
@@ -268,8 +268,8 @@ CLIENT_ID=$(echo $SP | jq -r '.client_id')
 CLIENT_SECRET=$(echo $SP | jq -r '.client_secret')
 
 # 2. Add to CI secrets
-echo "SECUREVAULT_CLIENT_ID=$CLIENT_ID"
-echo "SECUREVAULT_CLIENT_SECRET=$CLIENT_SECRET"
+echo "App Vault_CLIENT_ID=$CLIENT_ID"
+echo "App Vault_CLIENT_SECRET=$CLIENT_SECRET"
 
 # 3. Use in CI pipeline
 SP_TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/sp-login \
@@ -312,7 +312,7 @@ curl http://localhost:8080/health
 psql $DATABASE_URL -c "SELECT 1"
 
 # View logs (if using systemd)
-sudo journalctl -u securevault -f
+sudo journalctl -u App Vault -f
 
 # Check TLS certificate
 openssl x509 -in certs/server.crt -text -noout
@@ -321,13 +321,13 @@ openssl x509 -in certs/server.crt -text -noout
 for i in {1..150}; do curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/health; done
 
 # Check metrics
-curl http://localhost:8080/metrics | grep securevault_requests_total
+curl http://localhost:8080/metrics | grep App Vault_requests_total
 
 # Database: Find secrets by tag
-psql securevault -c "SELECT name, tags FROM secrets WHERE 'production' = ANY(tags);"
+psql App Vault -c "SELECT name, tags FROM secrets WHERE 'production' = ANY(tags);"
 
 # Database: Audit trail for user
-psql securevault -c "SELECT * FROM audit_logs WHERE user_id = 'USER_UUID' ORDER BY created_at DESC LIMIT 20;"
+psql App Vault -c "SELECT * FROM audit_logs WHERE user_id = 'USER_UUID' ORDER BY created_at DESC LIMIT 20;"
 ```
 
 ## Useful SQL Queries
@@ -362,13 +362,13 @@ SELECT version, status, created_at, rotation_reason FROM key_versions ORDER BY v
 # Max open: 25, Max idle: 5
 
 # Monitor database performance
-psql securevault -c "SELECT * FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;"
+psql App Vault -c "SELECT * FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;"
 
 # Check memory usage
-curl http://localhost:8080/metrics | grep securevault_memory
+curl http://localhost:8080/metrics | grep App Vault_memory
 
 # Check goroutines
-curl http://localhost:8080/metrics | grep securevault_goroutines
+curl http://localhost:8080/metrics | grep App Vault_goroutines
 
 # Profile CPU
 curl http://localhost:8080/debug/pprof/profile > cpu.prof

@@ -1,6 +1,6 @@
-# Contributing to SecureVault
+# Contributing to App Vault
 
-Thank you for your interest in contributing to SecureVault! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to App Vault! This document provides guidelines for contributing to the project.
 
 ## Code of Conduct
 
@@ -31,7 +31,7 @@ Thank you for your interest in contributing to SecureVault! This document provid
 
 ```bash
 # Clone the repository
-git clone https://github.com/securevault/app-vault.git
+git clone https://github.com/App Vault/app-vault.git
 cd app-vault
 
 # Install dependencies

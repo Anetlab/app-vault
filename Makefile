@@ -1,7 +1,7 @@
 .PHONY: help build run test clean docker-up docker-down migrate
 
 help:
-	@echo "SecureVault - Available commands:"
+	@echo "App Vault - Available commands:"
 	@echo "  make build       - Build the server binary"
 	@echo "  make run         - Run the server"
 	@echo "  make test        - Run all tests"
@@ -11,7 +11,7 @@ help:
 	@echo "  make migrate     - Run database migrations"
 
 build:
-	go build -o bin/securevault cmd/server/main.go
+	go build -o bin/appvault cmd/server/main.go
 
 run:
 	go run cmd/server/main.go
