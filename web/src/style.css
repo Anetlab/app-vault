@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-700;
+  }
+  
+  body {
+    @apply bg-dark-bg text-gray-100 antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply outline-none ring-2 ring-primary;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-600;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-primary/20;
+  }
+
+  .btn-secondary {
+    @apply px-5 py-2.5 bg-dark-card hover:bg-dark-border text-gray-300 font-medium rounded-xl border border-gray-700 transition-colors;
+  }
+
+  .card {
+    @apply bg-dark-card rounded-2xl border border-gray-800 p-6;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2.5 bg-dark-bg border border-gray-700 rounded-xl text-gray-300 placeholder-gray-500 transition-all;
+  }
+}
+
+@layer utilities {
+  .fade-enter-active,
+  .fade-leave-active {
+    @apply transition-opacity duration-300;
+  }
+
+  .fade-enter-from,
+  .fade-leave-to {
+    @apply opacity-0;
+  }
+
+  .slide-enter-active,
+  .slide-leave-active {
+    @apply transition-all duration-300;
+  }
+
+  .slide-enter-from,
+  .slide-leave-to {
+    @apply transform -translate-x-2 opacity-0;
+  }
+}

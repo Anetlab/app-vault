@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVault - Vue.js</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
+        .slide-enter-from, .slide-leave-to { transform: translateX(-10px); opacity: 0; }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-white">
+    <div id="app">
+        <div class="flex h-screen">
+            <!-- Sidebar -->
+            <aside class="w-64 bg-[#1e293b] border-r border-gray-800 flex flex-col">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-800">
+                    <div class="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-lock text-white text-sm"></i>
+                    </div>
+                    <span class="text-lg font-semibold text-gray-300">SecureVault</span>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="px-4 py-4 space-y-1 flex-1">
+                    <button 
+                        v-for="item in menuItems" 
+                        :key="item.name"
+                        @click="activeMenu = item.name"
+                        :class="[
+                            'flex items-center gap-3 w-full px-4 py-3 text-left rounded-lg transition-all duration-200',
+                            activeMenu === item.name 
+                                ? 'bg-cyan-500/20 text-cyan-400 border-l-2 border-cyan-500' 
+                                : 'text-gray-400 hover:bg-gray-800'
+                        ]"
+                    >
+                        <i :class="[item.icon, 'w-5']"></i>
+                        <span class="font-medium">{{ item.name }}</span>
+                    </button>
+                </nav>
+
+                <!-- Version -->
+                <div class="px-6 py-4 border-t border-gray-800 text-xs text-gray-500">
+                    v2.1.0 - Enterprise
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="flex-1 flex flex-col min-w-0">
+                <!-- Header -->
+                <header class="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-[#0f172a]">
+                    <!-- Search -->
+                    <div class="relative w-96">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-500"></i>
+                        </div>
+                        <input
+                            v-model="searchQuery"
+                            type="text"
+                            placeholder="Search secrets..."
+                            class="w-full pl-10 pr-4 py-2.5 bg-[#1e293b] border border-gray-700 rounded-xl text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                        />
+                    </div>
+
+                    <!-- Right Section -->
+                    <div class="flex items-center gap-4">
+                        <button class="relative p-2 text-gray-400 hover:text-white transition-colors">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                        </button>
+
+                        <button class="relative p-2 text-gray-400 hover:text-white transition-colors">
+                            <i class="fas fa-envelope text-lg"></i>
+                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+
+                        <div class="flex items-center gap-3 pl-4 border-l border-gray-700 cursor-pointer hover:opacity-80 transition-opacity">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                                <i class="fas fa-user text-white"></i>
+                            </div>
+                            <span class="text-gray-300 font-medium">admin</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-sm"></i>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Content -->
+                <div class="flex-1 p-6 overflow-auto">
+                    <!-- Category Filters -->
+                    <div class="flex items-center gap-3 mb-6">
+                        <button
+                            v-for="category in categories"
+                            :key="category"
+                            @click="selectedCategory = category"
+                            :class="[
+                                'px-6 py-2.5 rounded-xl font-medium transition-all duration-200',
+                                selectedCategory === category
+                                    ? 'bg-[#334155] text-white shadow-lg'
+                                    : 'bg-[#1e293b] text-gray-400 hover:bg-[#334155] hover:text-white border border-gray-700'
+                            ]"
+                        >
+                            {{ category }}
+                        </button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <button 
+                                @click="showAddModal = true"
+                                class="flex items-center gap-2 px-5 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30"
+                            >
+                                <i class="fas fa-plus"></i>
+                                Add Secret
+                            </button>
+
+                            <button class="flex items-center gap-2 px-5 py-2.5 bg-[#1e293b] hover:bg-[#334155] text-gray-300 font-medium rounded-xl border border-gray-700 transition-colors">
+                                <i class="fas fa-upload"></i>
+                                Import
+                            </button>
+
+                            <button class="flex items-center gap-2 px-5 py-2.5 bg-[#1e293b] hover:bg-[#334155] text-cyan-400 font-medium rounded-xl border border-gray-700 transition-colors">
+                                <i class="fas fa-download"></i>
+                                Export
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <button class="flex items-center gap-2 px-5 py-2.5 bg-[#1e293b] hover:bg-[#334155] text-gray-300 font-medium rounded-xl border border-gray-700 transition-colors">
+                                <i class="fas fa-file-import"></i>
+                                Bulk Import
+                            </button>
+
+                            <button class="flex items-center gap-2 px-5 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-white font-medium rounded-xl transition-all shadow-lg shadow-cyan-500/20">
+                                <i class="fas fa-file-export"></i>
+                                Backup
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="bg-[#1e293b] rounded-xl p-4 border border-gray-800">
+                            <div class="text-gray-400 text-sm mb-1">Total Secrets</div>
+                            <div class="text-2xl font-bold text-white">{{ secrets.length }}</div>
+                        </div>
+                        <div class="bg-[#1e293b] rounded-xl p-4 border border-gray-800">
+                            <div class="text-gray-400 text-sm mb-1">Database</div>
+                            <div class="text-2xl font-bold text-cyan-400">{{ secrets.filter(s => s.category === 'Database').length }}</div>
+                        </div>
+                        <div class="bg-[#1e293b] rounded-xl p-4 border border-gray-800">
+                            <div class="text-gray-400 text-sm mb-1">API Keys</div>
+                            <div class="text-2xl font-bold text-purple-400">{{ secrets.filter(s => s.category === 'API').length }}</div>
+                        </div>
+                        <div class="bg-[#1e293b] rounded-xl p-4 border border-gray-800">
+                            <div class="text-gray-400 text-sm mb-1">OAuth</div>
+                            <div class="text-2xl font-bold text-green-400">{{ secrets.filter(s => s.category === 'OAuth').length }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Secrets Table -->
+                    <div class="bg-[#1e293b] rounded-2xl border border-gray-800 overflow-hidden">
+                        <!-- Table Header -->
+                        <div class="grid grid-cols-4 px-6 py-4 border-b border-gray-800 text-sm font-medium text-gray-400">
+                            <div>Name</div>
+                            <div class="flex flex-col">
+                                <span>Type</span>
+                                <div class="w-6 h-0.5 bg-cyan-500 mt-1"></div>
+                            </div>
+                            <div>Created Date</div>
+                            <div class="text-right">Actions</div>
+                        </div>
+
+                        <!-- Table Body -->
+                        <transition-group name="slide" tag="div" class="divide-y divide-gray-800">
+                            <div
+                                v-for="secret in filteredSecrets"
+                                :key="secret.id"
+                                @click="selectedSecret = secret.id"
+                                :class="[
+                                    'grid grid-cols-4 px-6 py-4 items-center cursor-pointer transition-all duration-200',
+                                    selectedSecret === secret.id
+                                        ? 'bg-cyan-500 text-white'
+                                        : 'hover:bg-[#334155] text-gray-300'
+                                ]"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <i :class="['fas fa-lock', selectedSecret === secret.id ? 'text-white' : 'text-gray-400']"></i>
+                                    <span class="font-medium truncate">{{ secret.name }}</span>
+                                </div>
+
+                                <div :class="selectedSecret === secret.id ? 'text-white/90' : 'text-gray-400'">
+                                    {{ secret.type }}
+                                </div>
+
+                                <div :class="selectedSecret === secret.id ? 'text-white/90' : 'text-gray-400'">
+                                    {{ secret.created }}
+                                </div>
+
+                                <div class="flex items-center justify-end gap-3">
+                                    <button 
+                                        @click.stop="copySecret(secret)"
+                                        :class="[
+                                            'p-2 rounded-lg transition-all duration-200',
+                                            selectedSecret === secret.id 
+                                                ? 'hover:bg-white/20 text-white' 
+                                                : 'hover:bg-gray-700 text-gray-400'
+                                        ]"
+                                        title="Copy"
+                                    >
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <button 
+                                        @click.stop="editSecret(secret)"
+                                        :class="[
+                                            'p-2 rounded-lg transition-all duration-200',
+                                            selectedSecret === secret.id 
+                                                ? 'hover:bg-white/20 text-white' 
+                                                : 'hover:bg-gray-700 text-gray-400'
+                                        ]"
+                                        title="Edit"
+                                    >
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button 
+                                        @click.stop="deleteSecret(secret)"
+                                        :class="[
+                                            'p-2 rounded-lg transition-all duration-200',
+                                            selectedSecret === secret.id 
+                                                ? 'hover:bg-white/20 text-white' 
+                                                : 'hover:bg-gray-700 text-gray-400'
+                                        ]"
+                                        title="Delete"
+                                    >
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <button 
+                                        @click.stop="toggleVisibility(secret)"
+                                        :class="[
+                                            'p-2 rounded-lg transition-all duration-200',
+                                            selectedSecret === secret.id 
+                                                ? 'hover:bg-white/20 text-white' 
+                                                : 'hover:bg-gray-700 text-gray-400'
+                                        ]"
+                                        title="Show/Hide"
+                                    >
+                                        <i :class="secret.visible ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </transition-group>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div v-if="filteredSecrets.length === 0" class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-search text-gray-500 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-400">No secrets found</p>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="mt-4 text-sm text-gray-500 flex items-center justify-between">
+                        <span>Showing {{ filteredSecrets.length }} of {{ secrets.length }} secrets</span>
+                        <span>Last updated: {{ lastUpdated }}</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Add Secret Modal -->
+        <transition name="fade">
+            <div v-if="showAddModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50" @click.self="showAddModal = false">
+                <div class="bg-[#1e293b] rounded-2xl p-6 w-[500px] border border-gray-700 shadow-2xl">
+                    <h2 class="text-xl font-bold mb-4">Add New Secret</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Secret Name</label>
+                            <input v-model="newSecret.name" type="text" class="w-full px-4 py-2 bg-[#0f172a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="e.g., database-password">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Type</label>
+                            <select v-model="newSecret.category" class="w-full px-4 py-2 bg-[#0f172a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                                <option value="Database">Database</option>
+                                <option value="API">API</option>
+                                <option value="OAuth">OAuth</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Secret Value</label>
+                            <textarea v-model="newSecret.value" rows="3" class="w-full px-4 py-2 bg-[#0f172a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono" placeholder="Enter secret value..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Tags (comma separated)</label>
+                            <input v-model="newSecret.tags" type="text" class="w-full px-4 py-2 bg-[#0f172a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="production, database, postgres">
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button @click="showAddModal = false" class="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">Cancel</button>
+                        <button @click="addSecret" class="flex-1 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg transition-colors">Add Secret</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- Toast Notification -->
+        <transition name="fade">
+            <div v-if="toast.show" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50">
+                <i class="fas fa-check-circle"></i>
+                <span>{{ toast.message }}</span>
+            </div>
+        </transition>
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                // State
+                const activeMenu = ref('Secrets');
+                const selectedCategory = ref('All');
+                const selectedSecret = ref('api-keys');
+                const searchQuery = ref('');
+                const showAddModal = ref(false);
+                const lastUpdated = ref('just now');
+
+                const toast = ref({ show: false, message: '' });
+
+                const newSecret = ref({
+                    name: '',
+                    category: 'Database',
+                    value: '',
+                    tags: ''
+                });
+
+                // Menu items
+                const menuItems = [
+                    { name: 'Secrets', icon: 'fas fa-key' },
+                    { name: 'Service Principals', icon: 'fas fa-users-cog' },
+                    { name: 'Key Rotation', icon: 'fas fa-sync-alt' },
+                    { name: 'Audit Logs', icon: 'fas fa-history' },
+                    { name: 'Settings', icon: 'fas fa-cog' }
+                ];
+
+                // Categories
+                const categories = ['All', 'Database', 'API', 'OAuth'];
+
+                // Secrets data
+                const secrets = ref([
+                    { id: 1, name: 'database-password', type: 'Database', created: '38bdf', category: 'Database', visible: false },
+                    { id: 2, name: 'api-keys', type: 'API', created: '38bdf', category: 'API', visible: false },
+                    { id: 3, name: 'oauth-tokens', type: 'OAuth', created: '38bdf', category: 'OAuth', visible: false },
+                    { id: 4, name: 'stripe-secret', type: 'API', created: '42abc', category: 'API', visible: false },
+                    { id: 5, name: 'redis-password', type: 'Database', created: '42abc', category: 'Database', visible: false },
+                    { id: 6, name: 'jwt-secret', type: 'OAuth', created: '42abc', category: 'OAuth', visible: false },
+                    { id: 7, name: 'aws-access-key', type: 'API', created: '51def', category: 'API', visible: false },
+                    { id: 8, name: 'mongo-uri', type: 'Database', created: '51def', category: 'Database', visible: false },
+                ]);
+
+                // Computed
+                const filteredSecrets = computed(() => {
+                    return secrets.value.filter(secret => {
+                        const matchesCategory = selectedCategory.value === 'All' || secret.category === selectedCategory.value;
+                        const matchesSearch = secret.name.toLowerCase().includes(searchQuery.value.toLowerCase());
+                        return matchesCategory && matchesSearch;
+                    });
+                });
+
+                // Methods
+                const showToast = (message) => {
+                    toast.value = { show: true, message };
+                    setTimeout(() => toast.value.show = false, 3000);
+                };
+
+                const copySecret = (secret) => {
+                    navigator.clipboard.writeText(`secret-value-${secret.id}`);
+                    showToast('Secret copied to clipboard');
+                };
+
+                const editSecret = (secret) => {
+                    showToast(`Editing ${secret.name}`);
+                };
+
+                const deleteSecret = (secret) => {
+                    if (confirm(`Delete ${secret.name}?`)) {
+                        secrets.value = secrets.value.filter(s => s.id !== secret.id);
+                        showToast('Secret deleted');
+                    }
+                };
+
+                const toggleVisibility = (secret) => {
+                    secret.visible = !secret.visible;
+                };
+
+                const addSecret = () => {
+                    if (!newSecret.value.name || !newSecret.value.value) {
+                        alert('Please fill in all fields');
+                        return;
+                    }
+
+                    const id = Math.max(...secrets.value.map(s => s.id)) + 1;
+                    secrets.value.unshift({
+                        id,
+                        name: newSecret.value.name,
+                        type: newSecret.value.category,
+                        created: Math.random().toString(36).substring(7),
+                        category: newSecret.value.category,
+                        visible: false
+                    });
+
+                    newSecret.value = { name: '', category: 'Database', value: '', tags: '' };
+                    showAddModal.value = false;
+                    showToast('Secret added successfully');
+                    lastUpdated.value = new Date().toLocaleTimeString();
+                };
+
+                // Update time every minute
+                setInterval(() => {
+                    lastUpdated.value = new Date().toLocaleTimeString();
+                }, 60000);
+
+                return {
+                    activeMenu,
+                    selectedCategory,
+                    selectedSecret,
+                    searchQuery,
+                    showAddModal,
+                    newSecret,
+                    secrets,
+                    menuItems,
+                    categories,
+                    filteredSecrets,
+                    toast,
+                    lastUpdated,
+                    copySecret,
+                    editSecret,
+                    deleteSecret,
+                    toggleVisibility,
+                    addSecret
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

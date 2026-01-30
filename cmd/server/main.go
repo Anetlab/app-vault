@@ -43,7 +43,7 @@ func loadConfig() *Config {
 	maxRequestSizeMB, _ := strconv.ParseInt(getEnv("MAX_REQUEST_SIZE_MB", "1"), 10, 64)
 
 	return &Config{
-		ServerPort:       getEnv("SERVER_PORT", "8080"),
+		ServerPort:       getEnv("SERVER_PORT", "8888"),
 		DatabaseURL:      getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/appvault?sslmode=disable"),
 		JWTSecret:        getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
 		MigrationsPath:   getEnv("MIGRATIONS_PATH", "migrations"),
