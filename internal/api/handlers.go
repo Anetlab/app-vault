@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/base64"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/app-vault/app-vault/internal/metrics"
@@ -111,17 +110,8 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		metrics.GetMetrics().RecordAuthFailure()
-		// Return more specific error for debugging
-		errMsg := err.Error()
-		if strings.Contains(errMsg, "user not found") {
-			writeError(w, http.StatusUnauthorized, "User not found")
-		} else if strings.Contains(errMsg, "secret key mismatch") {
-			writeError(w, http.StatusUnauthorized, "Secret key is incorrect")
-		} else if strings.Contains(errMsg, "password incorrect") {
-			writeError(w, http.StatusUnauthorized, "Password is incorrect")
-		} else {
-			writeError(w, http.StatusUnauthorized, errMsg)
-		}
+		// Always return the same generic error to prevent user enumeration.
+		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 

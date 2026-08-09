@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,6 +26,7 @@ type Config struct {
 	ServerPort       string
 	DatabaseURL      string
 	JWTSecret        string
+	Env              string
 	MigrationsPath   string
 	EnableTLS        bool
 	TLSCertFile      string
@@ -34,6 +36,11 @@ type Config struct {
 	RateLimitWindow  time.Duration
 	MaxRequestSize   int64
 }
+
+// defaultJWTSecret is the placeholder value shipped in .env.example. Any
+// configuration still using this value in production indicates a
+// misconfiguration that we refuse to start with.
+const defaultJWTSecret = "your-secret-key-change-this-in-production"
 
 // loadConfig loads configuration from environment variables
 func loadConfig() *Config {
@@ -46,7 +53,8 @@ func loadConfig() *Config {
 	return &Config{
 		ServerPort:       getEnv("SERVER_PORT", "8888"),
 		DatabaseURL:      getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/appvault?sslmode=disable"),
-		JWTSecret:        getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
+		JWTSecret:        getEnv("JWT_SECRET", defaultJWTSecret),
+		Env:              getEnv("APP_ENV", "development"),
 		MigrationsPath:   getEnv("MIGRATIONS_PATH", "migrations"),
 		EnableTLS:        enableTLS,
 		TLSCertFile:      getEnv("TLS_CERT_FILE", "certs/server.crt"),
@@ -56,6 +64,35 @@ func loadConfig() *Config {
 		RateLimitWindow:  time.Duration(rateLimitWindowSec) * time.Second,
 		MaxRequestSize:   maxRequestSizeMB * 1024 * 1024,
 	}
+}
+
+// validateSecurityConfig refuses to start with insecure defaults when the
+// deployment is marked as production. In development we only log a warning
+// so local experiments still work.
+func validateSecurityConfig(cfg *Config) error {
+	if cfg.Env != "production" {
+		if cfg.JWTSecret == "" || cfg.JWTSecret == defaultJWTSecret {
+			log.Printf("WARNING: JWT_SECRET is unset or still the placeholder; do not use this configuration in production")
+		}
+		if !cfg.EnableTLS {
+			log.Printf("WARNING: TLS is disabled; do not use this configuration in production")
+		}
+		return nil
+	}
+
+	if cfg.JWTSecret == "" {
+		return fmt.Errorf("JWT_SECRET must be set when APP_ENV=production")
+	}
+	if cfg.JWTSecret == defaultJWTSecret {
+		return fmt.Errorf("JWT_SECRET must be changed from its default value when APP_ENV=production")
+	}
+	if len(cfg.JWTSecret) < 32 {
+		return fmt.Errorf("JWT_SECRET must be at least 32 characters when APP_ENV=production (got %d)", len(cfg.JWTSecret))
+	}
+	if !cfg.EnableTLS {
+		return fmt.Errorf("ENABLE_TLS must be true when APP_ENV=production")
+	}
+	return nil
 }
 
 // getEnv gets an environment variable with a default value
@@ -70,6 +107,10 @@ func main() {
 	log.Println("Starting App Vault server...")
 
 	cfg := loadConfig()
+
+	if err := validateSecurityConfig(cfg); err != nil {
+		log.Fatalf("Insecure configuration: %v", err)
+	}
 
 	database, err := db.New(cfg.DatabaseURL)
 	if err != nil {

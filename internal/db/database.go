@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/app-vault/app-vault/internal/models"
@@ -38,25 +40,112 @@ func New(connStr string) (*Database, error) {
 	return &Database{db: db}, nil
 }
 
-// RunMigrations executes all SQL migration files
+// NewWithDB wraps an existing *sql.DB. Useful for tests that need to drive
+// the database layer against a mock connection.
+func NewWithDB(db *sql.DB) *Database {
+	return &Database{db: db}
+}
+
+// RunMigrations applies any SQL files in migrationsPath that have not yet
+// been recorded in the schema_migrations table. Applied files are tracked by
+// filename so they are skipped on subsequent boots. Each migration is run
+// inside a transaction along with its version insert; either both succeed or
+// the whole file is left unapplied.
 func (d *Database) RunMigrations(migrationsPath string) error {
 	files, err := filepath.Glob(filepath.Join(migrationsPath, "*.sql"))
 	if err != nil {
 		return fmt.Errorf("failed to list migrations: %w", err)
 	}
+	sort.Strings(files)
+
+	applied, err := d.loadAppliedMigrations()
+	if err != nil {
+		return fmt.Errorf("failed to load applied migrations: %w", err)
+	}
 
 	for _, file := range files {
-		content, err := os.ReadFile(file)
-		if err != nil {
-			return fmt.Errorf("failed to read migration file %s: %w", file, err)
+		version := filepath.Base(file)
+		if applied[version] {
+			continue
 		}
 
-		if _, err := d.db.Exec(string(content)); err != nil {
+		content, err := os.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("failed to read migration %s: %w", file, err)
+		}
+
+		if err := d.applyMigration(version, string(content)); err != nil {
 			return fmt.Errorf("failed to execute migration %s: %w", file, err)
 		}
 	}
 
 	return nil
+}
+
+// loadAppliedMigrations returns the set of migration filenames already
+// recorded as applied.
+func (d *Database) loadAppliedMigrations() (map[string]bool, error) {
+	applied := make(map[string]bool)
+
+	rows, err := d.db.Query(`SELECT version FROM schema_migrations`)
+	if err != nil {
+		// schema_migrations is created by 001_initial_schema.sql which
+		// itself needs to be applied first; allow this transient state
+		// and treat the table as empty so 001 still gets to run.
+		if isUndefinedTable(err) {
+			return applied, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var version string
+		if err := rows.Scan(&version); err != nil {
+			return nil, err
+		}
+		applied[version] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return applied, nil
+}
+
+// applyMigration runs a single migration file and records it as applied
+// inside the same transaction.
+func (d *Database) applyMigration(version, sqlContent string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.Exec(sqlContent); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(
+		`INSERT INTO schema_migrations (version) VALUES ($1)
+		 ON CONFLICT (version) DO NOTHING`,
+		version,
+	); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// isUndefinedTable reports whether err is a Postgres "undefined_table"
+// (SQLSTATE 42P01) error. Used to tolerate running 001 before the
+// schema_migrations table exists.
+func isUndefinedTable(err error) bool {
+	if err == nil {
+		return false
+	}
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		return pqErr.Code == "42P01"
+	}
+	return false
 }
 
 // Close closes the database connection

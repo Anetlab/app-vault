@@ -1,3 +1,11 @@
+-- Migration tracking table. Holds the list of applied migration files so
+-- the runner can skip them on subsequent boots. Safe to re-run because
+-- of IF NOT EXISTS.
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    version    VARCHAR(255) PRIMARY KEY,
+    applied_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,

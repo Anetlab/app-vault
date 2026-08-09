@@ -158,18 +158,38 @@ type LoginResponse struct {
 	Email  string
 }
 
-// Login authenticates a user and returns a JWT token
+// errAuthInvalid is the single error returned for every login failure.
+// Using a single error prevents user-enumeration via differential responses
+// and avoids leaking which credential was wrong.
+var errAuthInvalid = fmt.Errorf("authentication failed: invalid credentials")
+
+// Login authenticates a user and returns a JWT token.
+//
+// All failure modes (unknown user, wrong secret key, wrong password) collapse
+// to a single error so the caller cannot tell accounts apart. The KDF and
+// vault-key decryption are also performed against a dummy record when the
+// user is missing, so the timing of a failed login is independent of whether
+// the email exists.
 func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*LoginResponse, error) {
 	user, err := s.db.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
 	if user == nil {
-		return nil, fmt.Errorf("authentication failed: user not found")
+		// Equalize work: run the same KDF against a fixed dummy salt
+		// so the failure path takes the same time as a real attempt.
+		dummySalt := make([]byte, crypto.SaltLen)
+		masterKey := crypto.DeriveMasterKey(req.Password, req.SecretKey, dummySalt)
+		crypto.ZeroBytes(masterKey)
+		return nil, errAuthInvalid
 	}
 
 	if !crypto.CompareHashConstantTime(user.SecretKeyHash, req.SecretKey) {
-		return nil, fmt.Errorf("authentication failed: secret key mismatch")
+		// Still derive and discard a master key to keep timing similar
+		// to the "wrong password" branch below.
+		masterKey := crypto.DeriveMasterKey(req.Password, req.SecretKey, user.MasterKeySalt)
+		crypto.ZeroBytes(masterKey)
+		return nil, errAuthInvalid
 	}
 
 	masterKey := crypto.DeriveMasterKey(req.Password, req.SecretKey, user.MasterKeySalt)
@@ -183,7 +203,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*LoginRespo
 
 	vaultKey, err := crypto.DecryptVaultKey(user.EncryptedVaultKey, kek, user.VaultKeyNonce)
 	if err != nil {
-		return nil, fmt.Errorf("authentication failed: password incorrect")
+		return nil, errAuthInvalid
 	}
 	crypto.ZeroBytes(vaultKey)
 

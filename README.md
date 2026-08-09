@@ -60,7 +60,7 @@ App Vault implements a 1Password-inspired security model:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/App Vault/app-vault.git
+git clone https://github.com/app-vault/app-vault.git
 cd app-vault
 ```
 
@@ -71,12 +71,12 @@ go mod download
 
 3. Set up PostgreSQL:
 ```bash
-createdb App Vault
+createdb appvault
 ```
 
 4. Configure environment variables:
 ```bash
-export DATABASE_URL="postgres://postgres:postgres@localhost:5432/App Vault?sslmode=disable"
+export DATABASE_URL="postgres://postgres:postgres@localhost:5432/appvault?sslmode=disable"
 export JWT_SECRET="your-secret-key-change-this-in-production"
 export SERVER_PORT="8080"
 ```
@@ -347,7 +347,7 @@ Content-Type: application/json
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://postgres:postgres@localhost:5432/App Vault?sslmode=disable` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgres://postgres:postgres@localhost:5432/appvault?sslmode=disable` |
 | `JWT_SECRET` | Secret key for JWT signing | `your-secret-key-change-this-in-production` |
 | `SERVER_PORT` | Server port | `8080` |
 | `MIGRATIONS_PATH` | Path to SQL migration files | `migrations` |
@@ -373,10 +373,10 @@ See [TESTING.md](TESTING.md) for comprehensive testing guide including load test
 
 ```bash
 # Development build
-go build -o bin/App Vault cmd/server/main.go
+go build -o bin/appvault cmd/server/main.go
 
 # Production build with optimizations
-go build -ldflags="-s -w" -o bin/App Vault cmd/server/main.go
+go build -ldflags="-s -w" -o bin/appvault cmd/server/main.go
 ```
 
 ### Run Migrations Manually
@@ -384,7 +384,7 @@ go build -ldflags="-s -w" -o bin/App Vault cmd/server/main.go
 Migrations are automatically run on startup. To run them manually:
 
 ```bash
-psql -U postgres -d App Vault -f migrations/001_initial_schema.sql
+psql -U postgres -d appvault -f migrations/001_initial_schema.sql
 ```
 
 ## Production Deployment
@@ -412,8 +412,8 @@ cp .env.example .env
 .\scripts\generate-certs.ps1  # Windows
 
 # 3. Build and run
-go build -o bin/App Vault cmd/server/main.go
-./bin/App Vault
+go build -o bin/appvault cmd/server/main.go
+./bin/appvault
 ```
 
 ## Security Considerations

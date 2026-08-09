@@ -33,14 +33,6 @@ services:
     container_name: appvault-server
     env_file:
       - .env
-    environment:
-      # Database connection - configure these for external DB
-      DB_HOST: ${DB_HOST:-postgres}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      DB_NAME: ${DB_NAME:-appvault}
-      DB_SSLMODE: ${DB_SSLMODE:-disable}
     ports:
       - "${SERVER_PORT:-8888}:8888"
       - "${TLS_PORT:-8443}:8443"
